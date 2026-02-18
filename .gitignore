@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+*.session
+*.session-journal
+*.db
+*.log
+cooldown_state.json
+telegram_cooldown_state.json
+nul
+_script.b64
+_test_gen.py
+_writer.py
+reports/

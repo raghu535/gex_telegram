@@ -1,0 +1,294 @@
+# GEX 0DTE Trading Engine Configuration
+# All tunable thresholds and settings
+
+timezone: America/Los_Angeles
+
+telegram:
+  channel: spotgammaraed
+  channels:
+    - spotgammaraed
+    - SmartStrategy_Trader
+    - SPXW500
+    - ipospx
+    - abo_shaqran
+  env_path: C:/Code/antigravity/.env
+
+discord:
+  webhooks:
+    gex_ops: ${DISCORD_GEX_OPS_WEBHOOK}
+    market_pulse: ${DISCORD_MARKET_PULSE_WEBHOOK}
+    daily_intel: ${DISCORD_DAILY_INTEL_WEBHOOK}
+    trading_summary: ${DISCORD_TRADING_SUMMARY_WEBHOOK}
+    intraday_fast: ${DISCORD_INTRADAY_FAST_WEBHOOK}
+  routing:
+    gex_ops:
+      - regime_shift
+      - wall_breach
+      - gamma_squeeze
+      - bounce_zone
+      - gamma_compression
+      - strike_flip
+    market_pulse:
+      - rth_pulse
+    daily_intel:
+      - overnight_drift
+      - final_15
+      - morning_brief
+    trading_summary:
+      - quiet_summary
+
+alerts:
+  # full: all alerts; deep_context: suppress intraday noise, keep context/scheduled intel
+  mode: full
+
+sessions:
+  rth:
+    start: "06:30"
+    end: "13:00"
+  transition:
+    start: "13:00"
+    end: "13:15"
+  next_day_preview:
+    start: "13:15"
+    end: "04:00"
+  premarket:
+    start: "04:00"
+    end: "06:30"
+
+regime:
+  strong_gamma_bn: 8.0
+  moderate_gamma_bn: 4.0
+  flat_slope_range: 1.0
+  negative_slope_threshold: -3.0
+  severe_slope_threshold: -5.0
+  pin_range_pts: 15.0
+  flip_warning_pct: 20.0
+  decay_pct_threshold: 25.0
+  # Debounce: must see N consecutive snapshots agreeing before confirming a shift
+  hold_count: 3
+
+analysis:
+  fifteen_min_window: 15
+  one_hour_window: 60
+  regime_compute_interval: 5
+  overnight_drift_interval: 30
+  bounce_zone_pts: 15.0
+  wall_convergence_pct: 10.0
+  min_rr_ratio: 1.5
+  gamma_acceleration_threshold: 2.0
+  # Noise filters
+  min_spread_pts: 20          # Walls meaningless below this spread
+  wall_breach_buffer_pts: 5   # Price must exceed wall by this much
+  min_pivot_gamma_bn: 0.5     # Ignore pivot strikes with tiny gamma
+
+trend:
+  # Intraday trend dashboard + early flip detection
+  windows:
+    - minutes: 5
+      price_pts: 6
+      gamma_bn: 0.4
+      weight: 1
+      gamma_only_weight: 0
+      min_snaps: 2
+    - minutes: 15
+      price_pts: 12
+      gamma_bn: 0.8
+      weight: 2
+      gamma_only_weight: 1
+      min_snaps: 2
+    - minutes: 30
+      price_pts: 20
+      gamma_bn: 1.5
+      weight: 2
+      gamma_only_weight: 1
+      min_snaps: 2
+    - minutes: 60
+      price_pts: 35
+      gamma_bn: 2.5
+      weight: 3
+      gamma_only_weight: 2
+      min_snaps: 3
+  score_threshold: 6
+  smell_threshold: 2
+  overnight_weight: 1
+  overnight_pct: 15
+  floor_pressure_pts: 12
+  ceiling_pressure_pts: 12
+  decay_pct: 25
+  decay_weight: 2
+  structural_weight: 1
+  heartbeat_secs: 300
+  min_emit_score: 6
+
+day_profile:
+  # Classify early session profile for trend-noise gating.
+  compute_interval_seconds: 60
+  open_negative_bn: -4.0
+  early_crash_bn: -9.0
+  open_positive_bn: 5.0
+  early_not_too_negative_bn: -5.0
+
+counter_trend_gates:
+  # move_from_open (pts) : min_score required for counter-trend alert
+  # Counter-trend = bullish while below open, or bearish while above open.
+  gates:
+    - move_pts: 20
+      min_score: 6
+    - move_pts: 40
+      min_score: 7
+    - move_pts: 60
+      min_score: 8
+  # Above this move, suppress all counter-trend alerts regardless of score.
+  suppress_all_pts: 60
+
+advanced:
+  gci_hard_wall_pct: 40.0
+  gci_diffuse_pct: 25.0
+  asymmetry_call_dominant: 2.0
+  asymmetry_put_dominant: 1.0
+  squeeze_velocity_weight: 0.3
+  squeeze_proximity_weight: 0.3
+  squeeze_concentration_weight: 0.2
+  squeeze_asymmetry_weight: 0.2
+  pin_distance_weight: 0.3
+  pin_gamma_weight: 0.3
+  pin_time_weight: 0.2
+  pin_concentration_weight: 0.2
+
+cooldowns:
+  regime_shift: 300
+  wall_breach: 180
+  gamma_squeeze: 120
+  bounce_zone: 300
+  gamma_compression: 600
+  strike_flip: 300
+  overnight_drift: 1800
+  rth_pulse: 300
+  final_15: 86400
+  morning_brief: 86400
+  trend_dashboard: 300
+  hourly_recap: 3600
+  pin_forecast: 86400
+  data_lag: 300
+  data_restored: 0
+  quiet_summary: 600
+  spx_million: 0
+  gap_alert: 600
+  micro_pulse: 300
+  gamma_snap: 600
+
+scheduled:
+  morning_brief_time: "06:00"
+  morning_checklist_time: "06:35"
+  final_15_time: "12:45"
+  eod_summary_time: "13:05"
+  trend_review_time: "13:20"
+  hourly_recap_window_min: 5
+  pin_forecast_time: "12:30"
+  gap_alert_time: "13:10"
+
+data_feed:
+  stale_seconds: 300
+  check_interval_seconds: 60
+  alert_channel: gex_ops
+
+quiet_summary:
+  enabled: true
+  interval_seconds: 600
+  alert_channel: trading_summary
+
+micro_pulse:
+  enabled: true
+  interval_seconds: 300
+  min_move_pts: 5
+  min_gamma_delta_bn: 0.5
+  min_price_separation_pts: 4
+  mild_extreme_pts: 5
+  possible_extreme_pts: 8
+  crazy_extreme_pts: 12
+  breakout_buffer_pts: 1
+  invalidation_buffer_pts: 2
+  target1_pts: 5
+  target2_pts: 10
+  alert_channel: intraday_fast
+
+spx_million:
+  alert_channel: market_pulse
+
+gap_alert:
+  alert_channel: daily_intel
+  delay_minutes: 10
+
+timestamps:
+  max_future_minutes: 10
+  max_skew_minutes: 15
+  envelope_grace_minutes: 5
+
+pin_forecast:
+  band_pts: 5
+  lookback_days: 10
+  min_samples: 5
+
+flip_bands:
+  lookback_days: 3
+  min_occurrences: 5
+  ratio_threshold: 1.5
+  top_n: 3
+  band_pts: 5
+  compute_interval_min: 30
+
+move_context:
+  lookback_days: 10
+  compute_interval_min: 30
+  min_window_minutes: 50
+  p60: 60
+  p90: 90
+  gamma_decay_bn: 2.0
+  slope_threshold: -3.0
+
+trend_review:
+  days: 10
+  drop_pts: 30
+  drop_window_min: 60
+  separation_min: 60
+  lead_min: 60
+  output_dir: reports
+
+gamma_snap:
+  enabled: true
+  # LONG tiers: neg gamma + price falling (rubber band)
+  long_t1_gamma_bn: -5      # T1: 65% win, 9.0 R:R
+  long_t1_px_fall: 15
+  long_t2_gamma_bn: -5      # T2: 56% win, 5.5 R:R
+  long_t2_px_fall: 10
+  long_t3_gamma_bn: -10     # T3: 47% win, 4.4 R:R
+  long_t3_px_fall: 5
+  long_t4_gamma_bn: -15     # T4: 36% win, 2.4 R:R (extreme gamma alone)
+  # SHORT: fake rally (price up but gamma falling)
+  short_px_rise_15m: 10     # S1: 76% win
+  short_dg_fall_15m: -1
+
+telegram_alerts:
+  enabled: true
+  bot_token_env: TELEGRAM_BOT_TOKEN  # read from .env
+  cooldowns:
+    bounce_zone: 900      # 15min (vs 5min for Discord) — reduces noise
+    regime_shift: 600     # 10min
+    wall_breach: 300      # 5min
+    gamma_squeeze: 300    # 5min
+    morning_checklist: 86400  # once per day
+    final_15: 86400           # once per day
+    gap_alert: 86400          # once per day
+    gamma_snap: 900           # 15min (default for T3/S1)
+    "gamma_snap:LONG_T1": 900 # 15min — gives 3-4 alerts over a multi-hour T1 event
+    "gamma_snap:LONG_T1_LATE": 300  # 5min — late session T1, 0DTE amplified, more urgent
+    data_lag: 300             # 5min
+    data_restored: 0          # immediate
+  channels:
+    gex_ops: -1003526175764
+    market_pulse: -1003897349288
+    daily_intel: -1003763195313
+
+database:
+  path: gex_data.db
+  retention_days: 30
