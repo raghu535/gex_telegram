@@ -162,6 +162,12 @@ class SignalInterpreter:
         # Gamma snap state
         self._last_gamma_snap_side: Optional[str] = None  # "long" or "short"
         self._gamma_snap_cleared: bool = True
+        # B1 Early Rally / BEAR Early Selloff state
+        self._b1_fired_today: bool = False
+        self._b1_state_date: Optional[str] = None
+        self._rth_snap_count: int = 0  # count RTH snapshots to gate first 30min
+        # Butterfly pin alert state
+        self._butterfly_fired_today: bool = False
 
     def evaluate_all(
         self,
@@ -172,6 +178,7 @@ class SignalInterpreter:
         advanced: Optional[AdvancedMetrics],
         trend: Optional[TrendDashboard] = None,
         snapshots_1h: Optional[List[GEXSnapshot]] = None,
+        open_price: Optional[float] = None,
     ) -> List[Signal]:
         """Check all signal conditions and return triggered signals, sorted by priority."""
         signals = []
@@ -187,6 +194,13 @@ class SignalInterpreter:
             self._trend_heartbeat_sent = False
             self._trend_open_gamma_bn = None
             self._trend_early_min_gamma_bn = None
+        # Reset B1 and butterfly state on new day
+        if self._b1_state_date != snap_date:
+            self._b1_state_date = snap_date
+            self._b1_fired_today = False
+            self._butterfly_fired_today = False
+            self._rth_snap_count = 0
+        self._rth_snap_count += 1
 
         regime = one_hour.regime if one_hour else Regime.CONTROLLED_TREND
 
@@ -240,6 +254,18 @@ class SignalInterpreter:
 
         # 9. GAMMA_SNAP (gamma-velocity trade signals — long and short)
         sig = self._check_gamma_snap(snapshot, snapshots_1h)
+        if sig:
+            sig.timestamp = snapshot.timestamp_pt
+            signals.append(sig)
+
+        # 10. B1 EARLY RALLY / BEAR EARLY SELLOFF (first 30min momentum)
+        sig = self._check_early_momentum(snapshot, open_price)
+        if sig:
+            sig.timestamp = snapshot.timestamp_pt
+            signals.append(sig)
+
+        # 11. BUTTERFLY PIN (gamma > +10Bn = price pins to call wall, butterfly trade)
+        sig = self._check_butterfly_pin(snapshot, snapshots_1h)
         if sig:
             sig.timestamp = snapshot.timestamp_pt
             signals.append(sig)
@@ -527,25 +553,56 @@ class SignalInterpreter:
         self._prev_breach_side = side
         self._last_breach_wall_value = wall_value
 
+        gamma_bn = snapshot.net_gamma / 1e9
         if breached_call:
             dist = price - snapshot.call_wall
+            # Positive gamma + above wall = rejection likely (backtest: B3 wall break = 38% win)
+            # Negative gamma + above wall = real breakout possible
+            if gamma_bn > 5:
+                bias = "FADE SHORT"
+                stop = price + 15
+                target = snapshot.call_wall - 10
+                context = f"G={gamma_bn:+.1f}Bn (positive) — dealers sell into this. Rejection likely."
+            elif gamma_bn < -3:
+                bias = "BREAKOUT LONG"
+                stop = snapshot.call_wall - 5
+                target = price + 25
+                context = f"G={gamma_bn:+.1f}Bn (negative) — real breakout, no dealer resistance."
+            else:
+                bias = "NEUTRAL"
+                stop = snapshot.call_wall - 5
+                target = price + 15
+                context = f"G={gamma_bn:+.1f}Bn — watch for direction."
             msg = (
-                f"**WALL BREACH — CALL WALL**\n"
-                f"Price {price:.0f} broke above Call Wall {snapshot.call_wall}\n\n"
-                f"Distance: +{dist:.0f} pts above\n"
-                f"Net Gamma: {snapshot.net_gamma_bn:+.2f} Bn\n"
-                f"Spread: {snapshot.spread} pts\n\n"
-                f"Watch for gamma squeeze acceleration or rejection back below."
+                f"WALL BREACH — CALL WALL [{bias}]\n"
+                f"Price {price:.0f} above CW {snapshot.call_wall} (+{dist:.0f} pts)\n"
+                f"Entry: {price:.0f} | Stop: {stop:.0f} | Target: {target:.0f}\n"
+                f"{context}\n"
+                f"Spread: {snapshot.spread} pts\n"
             )
         else:
             dist = snapshot.put_floor - price
+            if gamma_bn < -5:
+                bias = "BOUNCE LONG"
+                stop = price - 10
+                target = snapshot.put_floor + 15
+                context = f"G={gamma_bn:+.1f}Bn (negative) — dealers amplify dip, bounce likely."
+            elif gamma_bn > 3:
+                bias = "BREAKDOWN SHORT"
+                stop = snapshot.put_floor + 5
+                target = price - 25
+                context = f"G={gamma_bn:+.1f}Bn (positive) — real breakdown, mean reversion failed."
+            else:
+                bias = "NEUTRAL"
+                stop = snapshot.put_floor + 5
+                target = price - 15
+                context = f"G={gamma_bn:+.1f}Bn — watch for direction."
             msg = (
-                f"**WALL BREACH — PUT FLOOR**\n"
-                f"Price {price:.0f} broke below Put Floor {snapshot.put_floor}\n\n"
-                f"Distance: -{dist:.0f} pts below\n"
-                f"Net Gamma: {snapshot.net_gamma_bn:+.2f} Bn\n"
-                f"Spread: {snapshot.spread} pts\n\n"
-                f"Watch for accelerated selling or bounce back above."
+                f"WALL BREACH — PUT FLOOR [{bias}]\n"
+                f"Price {price:.0f} below PF {snapshot.put_floor} (-{dist:.0f} pts)\n"
+                f"Entry: {price:.0f} | Stop: {stop:.0f} | Target: {target:.0f}\n"
+                f"{context}\n"
+                f"Spread: {snapshot.spread} pts\n"
             )
 
         return Signal(
@@ -580,12 +637,19 @@ class SignalInterpreter:
             return None
         self._squeeze_active = True
 
+        gamma_bn = snapshot.net_gamma / 1e9
+        # Squeeze above call wall with high gamma = S2 territory (100% reversal)
+        if gamma_bn > 10:
+            bias = "CAUTION — FADE ZONE"
+            note = f"G={gamma_bn:+.1f}Bn — backtest: 100% reversal when G>+10Bn. Squeeze may be the TOP."
+        else:
+            bias = "MOMENTUM"
+            note = f"G={gamma_bn:+.1f}Bn — dealer hedging amplifies upside."
         msg = (
-            f"**GAMMA SQUEEZE ALERT**\n"
-            f"Price {price:.0f} above Call Wall {snapshot.call_wall}\n"
-            f"Gamma accelerating: {accel:+.2f} Bn/hr^2\n"
-            f"Squeeze Probability: {squeeze_prob:.0f}%\n\n"
-            f"Dealer hedging may amplify upside move."
+            f"GAMMA SQUEEZE [{bias}]\n"
+            f"Price {price:.0f} above CW {snapshot.call_wall}\n"
+            f"Gamma accel: {accel:+.2f} Bn/hr^2 | Squeeze prob: {squeeze_prob:.0f}%\n"
+            f"{note}\n"
         )
 
         return Signal(
@@ -788,11 +852,47 @@ class SignalInterpreter:
             side, tier, tier_label = "LONG", 4, "T4"
             win_pct, rr = 36, 2.4
 
-        # --- SHORT: fake rally (price up but gamma falling) ---
+        # --- SHORT S1: fake rally (price up but gamma falling) ---
         if side is None and lookback_15m:
             if dP_15m >= short_px_rise and dG_15m <= short_dg_fall:
                 side, tier, tier_label = "SHORT", 1, "S1"
-                win_pct, rr = 76, 0.0  # R:R not computed for short
+                win_pct, rr = 76, 0.0
+
+        # --- SHORT S2: gamma ceiling (rally into strong positive gamma) ---
+        # Backtest: price up >15pts/20m + G>+10Bn = 100% reversal, -27.8 avg
+        short_s2_px_rise = float(cfg.get("short_s2_px_rise_20m", 15))
+        short_s2_gamma = float(cfg.get("short_s2_gamma_bn", 10))
+        if side is None:
+            if dP_20m >= short_s2_px_rise and gamma_bn >= short_s2_gamma:
+                side, tier, tier_label = "SHORT", 2, "S2"
+                win_pct, rr = 100, 0.0
+
+        # --- LIQUIDITY SWEEPS: price breaks 1hr high/low then reverses ---
+        # Uses snapshots_1h to find session high/low over last ~30 snaps
+        # LOW SWEEP LONG: new low + G<-5Bn = 67% win, +23.3 avg (74%/+27.8 if shallow)
+        # HIGH SWEEP SHORT: new high + G>+5Bn = 68% win, +9.0 avg
+        if side is None and snapshots_1h and len(snapshots_1h) >= 15:
+            sweep_gamma = float(cfg.get("sweep_gamma_bn", 5))
+            sweep_lookback = min(30, len(snapshots_1h) - 1)
+            recent = snapshots_1h[-sweep_lookback:-3]  # exclude last 3 (~5min)
+            if recent:
+                range_high = max(s.curr_price for s in recent)
+                range_low = min(s.curr_price for s in recent)
+
+                # LOW SWEEP: price just broke below range low
+                if price < range_low and 0 < range_low - price < 8 and gamma_bn <= -sweep_gamma:
+                    # Confirm it's a fresh break (was above 5min ago)
+                    if lookback_15m and lookback_15m.curr_price > range_low:
+                        side, tier, tier_label = "LONG", 5, "L1"
+                        win_pct = 67
+                        rr = 3.8  # 23.3/6.2
+
+                # HIGH SWEEP: price just broke above range high
+                if side is None and price > range_high and 0 < price - range_high < 8 and gamma_bn >= sweep_gamma:
+                    if lookback_15m and lookback_15m.curr_price < range_high:
+                        side, tier, tier_label = "SHORT", 3, "S3"
+                        win_pct = 68
+                        rr = 0.0
 
         if side is None:
             # No signal — check if we should clear state
@@ -820,34 +920,93 @@ class SignalInterpreter:
         if late_session and side == "LONG" and tier == 1:
             time_tag = " [LATE SESSION]"
 
-        # Build message
-        if side == "LONG":
+        # Build actionable message with entry/stop/target
+        pf = snapshot.put_floor or 0
+        cw = snapshot.call_wall or 0
+
+        if tier_label == "L1":
+            stop = price - 8
+            target = price + 20
             msg = (
-                f"**GAMMA SNAP — LONG [{tier_label}]{time_tag}**\n"
+                f"BUY SIGNAL — LIQUIDITY SWEEP [L1]{time_tag}\n"
                 f"Price: {price:.0f} | Gamma: {gamma_bn:+.1f} Bn\n"
-                f"20m move: {dP_20m:+.0f} pts | dG: {dG_20m:+.1f} Bn\n"
-                f"Backtest: {win_pct}% win | {rr:.1f}:1 R:R\n"
+                f"Entry: {price:.0f} | Stop: {stop:.0f} | Target: {target:.0f}\n"
+                f"Backtest: {win_pct}% win | +23 avg | {rr:.1f}:1 R:R\n"
+                f"Broke below 1hr low — stop hunt into neg gamma.\n"
+                f"Dealers absorb selling — snap back expected.\n"
             )
-            if snapshot.put_floor:
-                msg += f"Put floor: {snapshot.put_floor} ({price - snapshot.put_floor:.0f} pts away)\n"
-            if tier <= 2:
-                msg += "Rubber band snap — dealers forced to buy.\n"
-            elif tier == 3:
-                msg += "Deep gamma (<-10Bn) snap — structural bounce setup.\n"
-            elif tier == 4:
-                msg += "Extreme negative gamma — elevated bounce probability.\n"
-            if late_session and tier == 1:
-                msg += "0DTE gamma extreme — late session amplifies this move.\n"
+            if pf:
+                msg += f"Put floor: {pf} ({price - pf:.0f} pts away)\n"
+            if late_session:
+                msg += "LATE SESSION — 0DTE amplified.\n"
+        elif side == "LONG" and tier == 1:
+            stop = price - 10
+            target = price + 25
+            msg = (
+                f"BUY SIGNAL — RUBBER BAND [T1]{time_tag}\n"
+                f"Price: {price:.0f} | Gamma: {gamma_bn:+.1f} Bn\n"
+                f"Entry: {price:.0f} | Stop: {stop:.0f} | Target: {target:.0f}\n"
+                f"Backtest: 63% win | +25 avg | 9:1 R:R\n"
+                f"20m move: {dP_20m:+.0f} pts | Neg gamma = dealers forced to buy.\n"
+            )
+            if pf:
+                msg += f"Put floor: {pf} ({price - pf:.0f} pts away)\n"
+            if late_session:
+                msg += "LATE SESSION — 0DTE gamma extreme, move amplified.\n"
+        elif side == "LONG":
+            # T2/T3/T4 — Discord only, simpler message
+            stop = price - 10
+            target = price + 15
+            msg = (
+                f"**GAMMA SNAP — LONG [{tier_label}]**\n"
+                f"Price: {price:.0f} | Gamma: {gamma_bn:+.1f} Bn\n"
+                f"Entry: {price:.0f} | Stop: {stop:.0f} | Target: {target:.0f}\n"
+                f"Backtest: {win_pct}% win | {rr:.1f}:1 R:R\n"
+                f"20m move: {dP_20m:+.0f} pts | dG: {dG_20m:+.1f} Bn\n"
+            )
+        elif tier_label == "S2":
+            stop = price + 15
+            target = price - 28
+            msg = (
+                f"SELL SIGNAL — GAMMA CEILING [S2]\n"
+                f"Price: {price:.0f} | Gamma: {gamma_bn:+.1f} Bn\n"
+                f"Entry: {price:.0f} | Stop: {stop:.0f} | Target: {target:.0f}\n"
+                f"Backtest: 100% reversal | Avg drop -28 pts/30m\n"
+                f"Rally into +{gamma_bn:.0f}Bn gamma — dealers selling into this.\n"
+            )
+            if cw:
+                msg += f"Call wall: {cw} ({cw - price:.0f} pts)\n"
+            if late_session:
+                msg += "LATE SESSION — 0DTE amplifies reversal.\n"
+        elif tier_label == "S3":
+            stop = price + 10
+            target = price - 10
+            msg = (
+                f"SELL SIGNAL — LIQUIDITY SWEEP [S3]\n"
+                f"Price: {price:.0f} | Gamma: {gamma_bn:+.1f} Bn\n"
+                f"Entry: {price:.0f} | Stop: {stop:.0f} | Target: {target:.0f}\n"
+                f"Backtest: {win_pct}% win | +9 avg\n"
+                f"Broke above 1hr high — stop hunt into pos gamma.\n"
+                f"Dealers absorb buying — fade the breakout.\n"
+            )
+            if cw:
+                msg += f"Call wall: {cw} ({cw - price:.0f} pts)\n"
+            if late_session:
+                msg += "LATE SESSION — 0DTE amplified.\n"
         else:
+            # S1 — fake rally (Discord only)
+            stop = price + 10
+            target = price - 10
             msg = (
                 f"**GAMMA SNAP — SHORT [FAKE RALLY]**\n"
                 f"Price: {price:.0f} | Gamma: {gamma_bn:+.1f} Bn\n"
-                f"15m move: {dP_15m:+.0f} pts | dG: {dG_15m:+.1f} Bn\n"
+                f"Entry: {price:.0f} | Stop: {stop:.0f} | Target: {target:.0f}\n"
                 f"Backtest: {win_pct}% win\n"
+                f"15m move: {dP_15m:+.0f} pts | dG: {dG_15m:+.1f} Bn\n"
                 f"Rally not supported by gamma — reversal likely.\n"
             )
-            if snapshot.call_wall:
-                msg += f"Call wall: {snapshot.call_wall} ({snapshot.call_wall - price:.0f} pts away)\n"
+            if cw:
+                msg += f"Call wall: {cw} ({cw - price:.0f} pts)\n"
 
         return Signal(
             signal_type=SignalType.GAMMA_SNAP,
@@ -865,6 +1024,198 @@ class SignalInterpreter:
                 "win_pct": win_pct,
                 "rr": rr,
                 "late_session": late_session,
+            },
+        )
+
+    def _check_early_momentum(
+        self,
+        snapshot: GEXSnapshot,
+        open_price: Optional[float],
+    ) -> Optional[Signal]:
+        """B1 Early Rally / BEAR Early Selloff — first 30min momentum signal.
+
+        Backtest (129 days):
+          B1 LONG: +15pts from open in 30min => 82% win, +16.1 EOD (N=11)
+          B1 + G<0: 100% win, +56.4 avg (N=2)
+          B1 + G>+5: 100% win, +13.2 avg (N=5)
+        Fires once per day max.
+        """
+        if self._b1_fired_today:
+            return None
+        if open_price is None:
+            return None
+        # Only check in first ~30min of RTH (roughly 15 snapshots at 2-min intervals)
+        if self._rth_snap_count > 15:
+            return None
+
+        price = snapshot.curr_price
+        gamma_bn = snapshot.net_gamma / 1e9
+        move = price - open_price
+        pf = snapshot.put_floor or 0
+        cw = snapshot.call_wall or 0
+
+        if move > 15:
+            self._b1_fired_today = True
+            stop = open_price
+            target = price + 15
+            msg = (
+                f"BUY SIGNAL — EARLY RALLY [B1]\n"
+                f"SPX {price:.0f} | +{move:.0f} pts from open ({open_price:.0f})\n"
+                f"Gamma: {gamma_bn:+.1f} Bn\n"
+                f"Entry: {price:.0f} | Stop: {stop:.0f} | Target: {target:.0f}\n"
+                f"Backtest: 82% win | +16 avg EOD | MFE +30\n"
+                f"Strong opening momentum — tends to persist all day.\n"
+            )
+            if cw:
+                msg += f"Call wall: {cw} ({cw - price:.0f} pts)\n"
+            return Signal(
+                signal_type=SignalType.GAMMA_SNAP,
+                title="Early Rally B1",
+                message=msg,
+                channel="gex_ops",
+                priority=SignalType.GAMMA_SNAP,
+                metadata={
+                    "side": "LONG",
+                    "tier": 6,
+                    "tier_label": "B1",
+                    "gamma_bn": gamma_bn,
+                    "move_from_open": move,
+                    "win_pct": 82,
+                },
+            )
+
+        if move < -15:
+            self._b1_fired_today = True
+            # BEAR early selloff: only actionable when gamma -5 to 0 (80% win, +28.9)
+            if -5 <= gamma_bn < 0:
+                stop = open_price
+                target = price - 25
+                msg = (
+                    f"SELL SIGNAL — EARLY SELLOFF [BEAR]\n"
+                    f"SPX {price:.0f} | {move:.0f} pts from open ({open_price:.0f})\n"
+                    f"Gamma: {gamma_bn:+.1f} Bn (mild negative — sweet spot)\n"
+                    f"Entry: {price:.0f} | Stop: {stop:.0f} | Target: {target:.0f}\n"
+                    f"Backtest: 80% win | +29 avg EOD (G -5 to 0 subset)\n"
+                    f"Early momentum + mild neg gamma = sellers in control.\n"
+                )
+                if pf:
+                    msg += f"Put floor: {pf} ({price - pf:.0f} pts)\n"
+                return Signal(
+                    signal_type=SignalType.GAMMA_SNAP,
+                    title="Early Selloff BEAR",
+                    message=msg,
+                    channel="gex_ops",
+                    priority=SignalType.GAMMA_SNAP,
+                    metadata={
+                        "side": "SHORT",
+                        "tier": 7,
+                        "tier_label": "BEAR",
+                        "gamma_bn": gamma_bn,
+                        "move_from_open": move,
+                        "win_pct": 80,
+                    },
+                )
+
+        return None
+
+    def _check_butterfly_pin(
+        self,
+        snapshot: GEXSnapshot,
+        snapshots_1h: Optional[List[GEXSnapshot]],
+    ) -> Optional[Signal]:
+        """Butterfly pin trade alert — when gamma > +10Bn, price pins to call wall.
+
+        Backtest (116 trading days):
+          Avg G > +10Bn (N=18): 89% pin within 5pts, 100% within 10pts
+          Butterfly (20-pt wings at call wall): 56% win, +$339 avg P/L on $500 risk
+          Avg G > +15Bn (N=14): 93% pin within 5pts, 64% win, +$436 avg
+        Fires once per day max, after 10:00 AM PT (need gamma to establish).
+        """
+        if self._butterfly_fired_today:
+            return None
+
+        # Only fire after 10:00 AM PT — gamma pin strengthens as day progresses
+        now_pt = datetime.now(PT_TZ)
+        if now_pt.hour < 10:
+            return None
+
+        gamma_bn = snapshot.net_gamma / 1e9
+        if gamma_bn < 10:
+            return None
+
+        price = snapshot.curr_price
+        cw = snapshot.call_wall
+        if not cw or cw == 0:
+            return None
+
+        dist = abs(price - cw)
+        # Only alert when price is within 20pts of call wall (butterfly wing width)
+        if dist > 20:
+            return None
+
+        # Need some history to confirm gamma has been elevated
+        if snapshots_1h and len(snapshots_1h) >= 5:
+            recent_gamma = [s.net_gamma / 1e9 for s in snapshots_1h[-5:]]
+            avg_recent = sum(recent_gamma) / len(recent_gamma)
+            if avg_recent < 8:
+                return None
+        else:
+            return None
+
+        self._butterfly_fired_today = True
+
+        # Round call wall to nearest 5 for clean strike
+        center = round(cw / 5) * 5
+        wing_low = center - 20
+        wing_high = center + 20
+
+        # Determine confidence tier
+        if gamma_bn >= 15:
+            tier = "HIGH"
+            win_pct = 64
+            avg_pl = 436
+            pin_pct = 93
+        else:
+            tier = "STANDARD"
+            win_pct = 56
+            avg_pl = 339
+            pin_pct = 89
+
+        late_session = now_pt.hour >= 11 or (now_pt.hour == 10 and now_pt.minute >= 30)
+        late_tag = " [LATE SESSION]" if late_session else ""
+
+        msg = (
+            f"BUTTERFLY TRADE — GAMMA PIN [{tier}]{late_tag}\n"
+            f"SPX {price:.0f} | Gamma: {gamma_bn:+.1f} Bn | Call Wall: {cw}\n"
+            f"\n"
+            f"Trade: SPX 0DTE Butterfly at {center}\n"
+            f"  BUY  {wing_low} call\n"
+            f"  SELL 2x {center} call\n"
+            f"  BUY  {wing_high} call\n"
+            f"  Cost: ~$5 ($500 risk) | Max payout: $20 ($2,000)\n"
+            f"\n"
+            f"Backtest: {pin_pct}% pin within 5pts of CW | {win_pct}% butterfly win\n"
+            f"Avg P/L: +${avg_pl} per trade on $500 risk\n"
+            f"Gamma > +10Bn = dealers pin price to call wall into close.\n"
+        )
+        if late_session:
+            msg += "Late session — pin effect strongest last 2hrs.\n"
+
+        return Signal(
+            signal_type=SignalType.GAMMA_SNAP,
+            title=f"Butterfly Pin {tier}",
+            message=msg,
+            channel="market_pulse",
+            priority=SignalType.GAMMA_SNAP,
+            metadata={
+                "side": "BUTTERFLY",
+                "tier": 9,
+                "tier_label": f"PIN_{tier}",
+                "gamma_bn": gamma_bn,
+                "call_wall": cw,
+                "center_strike": center,
+                "dist_from_cw": dist,
+                "win_pct": win_pct,
             },
         )
 

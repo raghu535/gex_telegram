@@ -264,9 +264,14 @@ gamma_snap:
   long_t3_gamma_bn: -10     # T3: 47% win, 4.4 R:R
   long_t3_px_fall: 5
   long_t4_gamma_bn: -15     # T4: 36% win, 2.4 R:R (extreme gamma alone)
-  # SHORT: fake rally (price up but gamma falling)
+  # SHORT S1: fake rally (price up but gamma falling)
   short_px_rise_15m: 10     # S1: 76% win
   short_dg_fall_15m: -1
+  # SHORT S2: gamma ceiling (rally into strong positive gamma)
+  short_s2_px_rise_20m: 15  # S2: 100% reversal when G>+10Bn, avg -28pts/30m
+  short_s2_gamma_bn: 10
+  # LIQUIDITY SWEEPS: price breaks 1hr high/low then reverses
+  sweep_gamma_bn: 5         # L1: G<-5 for low sweep, S3: G>+5 for high sweep
 
 telegram_alerts:
   enabled: true
@@ -282,6 +287,13 @@ telegram_alerts:
     gamma_snap: 900           # 15min (default for T3/S1)
     "gamma_snap:LONG_T1": 900 # 15min — gives 3-4 alerts over a multi-hour T1 event
     "gamma_snap:LONG_T1_LATE": 300  # 5min — late session T1, 0DTE amplified, more urgent
+    "gamma_snap:SHORT_S2": 900 # 15min — gamma ceiling reversal
+    "gamma_snap:LONG_L1": 900  # 15min — liquidity sweep low grab
+    "gamma_snap:SHORT_S3": 900 # 15min — liquidity sweep high grab
+    "gamma_snap:LONG_B1": 86400  # once per day — early rally
+    "gamma_snap:SHORT_BEAR": 86400  # once per day — early selloff
+    "gamma_snap:BUTTERFLY_PIN_STANDARD": 86400  # once per day — butterfly pin
+    "gamma_snap:BUTTERFLY_PIN_HIGH": 86400      # once per day — high confidence pin
     data_lag: 300             # 5min
     data_restored: 0          # immediate
   channels:

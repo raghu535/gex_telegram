@@ -160,7 +160,10 @@ class TelegramAlertSender:
         - GAMMA_SNAP LONG T2: 47%/+4.8 net (Discord only — coin flip, low net)
         - GAMMA_SNAP LONG T3: 39%/+3.2 net (Discord only — fails both criteria)
         - GAMMA_SNAP LONG T4: 22%/-2.1 net (Discord only — negative EV)
-        - GAMMA_SNAP SHORT S1: 67%/+1.1 net (Telegram — high win%, small sample)
+        - GAMMA_SNAP SHORT S1: 67%/+1.1 net (Discord only — win% ok but net too low)
+        - GAMMA_SNAP SHORT S2: 100%/-27.8 net (Telegram — gamma ceiling, rally into pos gamma)
+        - LIQUIDITY SWEEP LONG L1: 67%/+23.3 net (Telegram — low grab + neg gamma)
+        - LIQUIDITY SWEEP SHORT S3: 68%/+9.0 net (Telegram — high grab + pos gamma)
         """
         if not self._enabled:
             return False
@@ -178,10 +181,16 @@ class TelegramAlertSender:
         if signal.signal_type == SignalType.GAMMA_SNAP:
             tier = signal.metadata.get("tier", 99)
             side = signal.metadata.get("side")
+            # Swing signals always go to Telegram
+            if side == "SWING":
+                return True
+            # Butterfly pin signals always go to Telegram
+            if side == "BUTTERFLY":
+                return True
             if side == "LONG":
-                # T1 only to phone (63% win, +25.3 avg net)
-                # T2 (47%/+4.8), T3 (39%/+3.2), T4 (22%/-2.1) all Discord only
-                if tier != 1:
+                # T1 (63%/+25.3), L1 (67%/+23.3), B1 (82%/+16.1) -> Telegram
+                # T2 (47%/+4.8), T3 (39%/+3.2), T4 (22%/-2.1) -> Discord only
+                if tier not in (1, 5, 6):  # T1=1, L1=5, B1=6
                     return False
                 # T1 when RSI<40 = 30% win, -10.5 net — actively harmful
                 if tier == 1:
@@ -189,6 +198,11 @@ class TelegramAlertSender:
                     if rsi is not None and rsi < 40:
                         log.info(f"Telegram: suppressing T1 LONG — RSI={rsi:.0f} < 40")
                         return False
+            if side == "SHORT":
+                # S2 (100% reversal), S3 (68%/+9.0), BEAR (80%/+28.9) -> Telegram
+                # S1 Discord only (67% win but only +1.1 net)
+                if tier not in (2, 3, 7):  # S2=2, S3=3, BEAR=7
+                    return False
         return True
 
     def send_signal(self, signal: Signal) -> bool:

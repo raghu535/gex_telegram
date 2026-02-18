@@ -31,12 +31,13 @@ with open(_cfg_path, "r") as f:
     CFG = yaml.safe_load(f)
 
 
-async def backfill(days: int = 7, limit: int = 5000):
+async def backfill(days: int = 7, limit: int = 5000, rth_only: bool = False):
     """Read historical messages from the Telegram channel and store them.
 
     Args:
         days: How many days back to fetch.
         limit: Max messages to fetch (Telegram caps at ~3000 per request).
+        rth_only: If True, only save snapshots within RTH +/-30min (6:00 AM - 1:30 PM PT).
     """
     env_path = CFG["telegram"].get("env_path", "")
     if env_path and os.path.exists(env_path):
@@ -79,6 +80,16 @@ async def backfill(days: int = 7, limit: int = 5000):
 
         snapshot = parse_message(text, envelope_dt=message.date)
         if snapshot and snapshot.session_tag != "EXPIRED_ECHO":
+            # RTH filter: only keep RTH or +/-30min around RTH (6:00-13:30 PT)
+            if rth_only:
+                snap_pt = snapshot.timestamp_pt
+                if hasattr(snap_pt, 'astimezone'):
+                    snap_pt = snap_pt.astimezone(PT_TZ)
+                h, m = snap_pt.hour, snap_pt.minute
+                t_min = h * 60 + m  # minutes since midnight PT
+                if not (360 <= t_min <= 810):  # 6:00 AM to 1:30 PM PT
+                    skipped += 1
+                    continue
             save_snapshot(snapshot)
             parsed += 1
 
@@ -103,8 +114,9 @@ async def backfill(days: int = 7, limit: int = 5000):
 def main():
     days = int(sys.argv[1]) if len(sys.argv) > 1 else 7
     limit = int(sys.argv[2]) if len(sys.argv) > 2 else 5000
-    log.info(f"Backfilling {days} days (max {limit} messages)...")
-    asyncio.run(backfill(days=days, limit=limit))
+    rth_only = "--rth" in sys.argv
+    log.info(f"Backfilling {days} days (max {limit} messages){' [RTH only]' if rth_only else ''}...")
+    asyncio.run(backfill(days=days, limit=limit, rth_only=rth_only))
 
 
 if __name__ == "__main__":

@@ -252,7 +252,7 @@ class GEXPipeline:
     def process_message(self, text: str, envelope_dt: Optional[datetime] = None):
         """Main pipeline: parse -> store -> compute -> signal -> alert."""
         # Log raw message for debugging
-        log.info(f"Raw message ({len(text)} chars): {text[:300]}...")
+        log.info("Raw message (%d chars): %s...", len(text), text[:300].encode('ascii', 'replace').decode())
         now = datetime.now(PT_TZ)
         self._last_message_received_at = now
 
@@ -366,6 +366,7 @@ class GEXPipeline:
             advanced=advanced,
             trend=trend_dashboard,
             snapshots_1h=snapshots_1h,
+            open_price=self._rth_open_price,
         )
 
         if signals:
@@ -1008,7 +1009,7 @@ class GEXPipeline:
         self.telegram.send_signal(signal)
 
     def _fire_eod_summary(self):
-        """Generate EOD summary at 1:05 PM PT."""
+        """Generate EOD summary at 1:05 PM PT + swing trade signals."""
         today = datetime.now(PT_TZ).strftime("%Y-%m-%d")
         rth_snapshots = get_today_snapshots(session_tag="RTH")
         if not rth_snapshots:
@@ -1033,6 +1034,9 @@ class GEXPipeline:
         save_daily_summary(today, summary)
         log.info(f"Saved daily summary for {today} ({len(rth_snapshots)} snapshots)")
 
+        # Fire swing trade signals
+        self._fire_swing_signals(rth_snapshots)
+
         # Purge old data
         retention = CFG["database"]["retention_days"]
         purge_old_data(retention)
@@ -1041,6 +1045,182 @@ class GEXPipeline:
         self.discord.cooldown.reset_daily()
         self.telegram.cooldown.reset_daily()
         self.scheduler.reset_daily()
+
+    def _fire_swing_signals(self, rth_snapshots):
+        """Check for swing trade setups at EOD and send to Telegram.
+
+        Swing signals (backtested on 129 days):
+          LONG:
+            SWING-L1: Down >50pts => 92% win, +78 avg 5d
+            SWING-L2: Down >20pts + G<-8Bn => 90% win, +76 avg 5d
+            SWING-S1: 2-day G>+5Bn streak => 64% win, +55 avg 5d
+            SWING-S3: Up >20pts + G>+10Bn => 67% win, +46 avg 5d
+        """
+        import sqlite3 as _sqlite3
+
+        if not rth_snapshots or len(rth_snapshots) < 10:
+            return
+
+        close_price = rth_snapshots[-1].curr_price
+        open_price = rth_snapshots[0].curr_price
+        close_gamma_bn = rth_snapshots[-1].net_gamma / 1e9
+        change = close_price - open_price
+        cw = rth_snapshots[-1].call_wall
+        pf = rth_snapshots[-1].put_floor
+
+        # Get yesterday's gamma close for streak detection
+        try:
+            db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), CFG["database"]["path"])
+            conn = _sqlite3.connect(db_path)
+            conn.row_factory = _sqlite3.Row
+            prev_days = conn.execute(
+                "SELECT date_pt, "
+                "  (SELECT net_gamma/1e9 FROM gex_snapshots s2 "
+                "   WHERE s2.date_pt=s1.date_pt AND s2.session_tag='RTH' "
+                "   ORDER BY s2.timestamp_pt DESC LIMIT 1) as g_close, "
+                "  (SELECT curr_price FROM gex_snapshots s3 "
+                "   WHERE s3.date_pt=s1.date_pt AND s3.session_tag='RTH' "
+                "   ORDER BY s3.timestamp_pt DESC LIMIT 1) as close_px, "
+                "  (SELECT curr_price FROM gex_snapshots s4 "
+                "   WHERE s4.date_pt=s1.date_pt AND s4.session_tag='RTH' "
+                "   ORDER BY s4.timestamp_pt ASC LIMIT 1) as open_px "
+                "FROM (SELECT DISTINCT date_pt FROM gex_snapshots "
+                "      WHERE session_tag='RTH' AND date_pt < ? "
+                "      ORDER BY date_pt DESC LIMIT 5) s1 "
+                "ORDER BY date_pt DESC",
+                (datetime.now(PT_TZ).strftime("%Y-%m-%d"),),
+            ).fetchall()
+            conn.close()
+        except Exception as e:
+            log.error(f"Swing signal DB query failed: {e}")
+            prev_days = []
+
+        prev_g_close = [dict(r) for r in prev_days] if prev_days else []
+
+        signals_found = []
+
+        # SWING-L1: Down >50pts today
+        if change < -50:
+            stop = close_price - 55
+            target = close_price + 75
+            signals_found.append(
+                f"SWING BUY — BIG DOWN DAY [L1]\n"
+                f"SPX closed {close_price:.0f} (down {abs(change):.0f} pts)\n"
+                f"Gamma: {close_gamma_bn:+.1f} Bn\n"
+                f"Entry: {close_price:.0f} (or tomorrow open)\n"
+                f"Stop: {stop:.0f} | Target: {target:.0f}\n"
+                f"Hold: 2-5 days\n"
+                f"Backtest: 92% win | +78 avg | N=13\n"
+                f"HIGHEST EDGE SIGNAL IN DATABASE."
+            )
+
+        # SWING-L2: Down >20pts + G < -8Bn
+        if change < -20 and close_gamma_bn < -8:
+            stop = close_price - 45
+            target = close_price + 75
+            signals_found.append(
+                f"SWING BUY — DOWN + DEEP NEG GAMMA [L2]\n"
+                f"SPX closed {close_price:.0f} (down {abs(change):.0f} pts) | G={close_gamma_bn:+.1f}Bn\n"
+                f"Entry: {close_price:.0f} | Stop: {stop:.0f} | Target: {target:.0f}\n"
+                f"Hold: 2-5 days\n"
+                f"Backtest: 90% win | +76 avg | N=10"
+            )
+
+        # SWING-L3: 3+ down days (check prev 2 days)
+        if change < 0 and len(prev_g_close) >= 2:
+            prev_changes = [d.get("close_px", 0) - d.get("open_px", 0) for d in prev_g_close[:2]]
+            if all(c < 0 for c in prev_changes):
+                stop = close_price - 50
+                target = close_price + 70
+                signals_found.append(
+                    f"SWING BUY — 3+ DOWN DAYS [L3]\n"
+                    f"SPX closed {close_price:.0f} | 3rd consecutive down day\n"
+                    f"Entry: {close_price:.0f} | Stop: {stop:.0f} | Target: {target:.0f}\n"
+                    f"Hold: 5 days\n"
+                    f"Backtest: 67% win | +71 avg | N=12"
+                )
+
+        # SWING-L4: 2-day neg gamma streak
+        if close_gamma_bn < -5 and prev_g_close and prev_g_close[0].get("g_close", 0) is not None:
+            if prev_g_close[0].get("g_close", 0) < -5:
+                stop = close_price - 60
+                target = close_price + 70
+                signals_found.append(
+                    f"SWING BUY — NEG GAMMA STREAK [L4]\n"
+                    f"SPX {close_price:.0f} | G={close_gamma_bn:+.1f}Bn (2nd day < -5Bn)\n"
+                    f"Entry: {close_price:.0f} | Stop: {stop:.0f} | Target: {target:.0f}\n"
+                    f"Hold: 5 days\n"
+                    f"Backtest: 78% win | +74 avg | N=9"
+                )
+
+        # SWING-S1: 3-day pos gamma streak
+        if close_gamma_bn > 5 and len(prev_g_close) >= 2:
+            prev_gs = [d.get("g_close", 0) for d in prev_g_close[:2]]
+            if all(g is not None and g > 5 for g in prev_gs):
+                stop = close_price + 30
+                target = close_price - 50
+                signals_found.append(
+                    f"SWING SELL — POS GAMMA STREAK 3D [S1]\n"
+                    f"SPX {close_price:.0f} | G={close_gamma_bn:+.1f}Bn (3rd day > +5Bn)\n"
+                    f"Entry: {close_price:.0f} | Stop: {stop:.0f} | Target: {target:.0f}\n"
+                    f"Hold: 5 days\n"
+                    f"Backtest: 75% win | +53 avg | N=8 | MAE only 28"
+                )
+
+        # SWING-S2: 2-day pos gamma streak
+        elif close_gamma_bn > 5 and prev_g_close and prev_g_close[0].get("g_close", 0) is not None:
+            if prev_g_close[0].get("g_close", 0) > 5:
+                stop = close_price + 35
+                target = close_price - 55
+                signals_found.append(
+                    f"SWING SELL — POS GAMMA STREAK 2D [S2]\n"
+                    f"SPX {close_price:.0f} | G={close_gamma_bn:+.1f}Bn (2nd day > +5Bn)\n"
+                    f"Entry: {close_price:.0f} | Stop: {stop:.0f} | Target: {target:.0f}\n"
+                    f"Hold: 5 days\n"
+                    f"Backtest: 64% win | +55 avg | N=14"
+                )
+
+        # SWING-S3: Up >20pts + G > +10Bn
+        if change > 20 and close_gamma_bn > 10:
+            stop = close_price + 40
+            target = close_price - 45
+            signals_found.append(
+                f"SWING SELL — UP DAY + STRONG GAMMA [S3]\n"
+                f"SPX closed {close_price:.0f} (up {change:.0f} pts) | G={close_gamma_bn:+.1f}Bn\n"
+                f"Entry: {close_price:.0f} | Stop: {stop:.0f} | Target: {target:.0f}\n"
+                f"Hold: 2-5 days\n"
+                f"Backtest: 67% win | +46 avg | N=12"
+            )
+
+        if not signals_found:
+            log.info("No swing signals at EOD.")
+            return
+
+        # Build combined swing alert
+        count = len(signals_found)
+        header = f"EOD SWING SIGNALS ({count} active)\n{'=' * 30}\n"
+        if cw:
+            header += f"Walls: PF {pf} | CW {cw}\n"
+        full_msg = header + "\n---\n".join(signals_found)
+
+        signal = Signal(
+            signal_type=SignalType.GAMMA_SNAP,
+            title=f"Swing Signals ({count})",
+            message=full_msg,
+            channel="gex_ops",
+            priority=SignalType.GAMMA_SNAP,
+            metadata={
+                "side": "SWING",
+                "tier": 8,
+                "tier_label": "SWING",
+                "swing_count": count,
+            },
+        )
+
+        # Send to both Discord and Telegram
+        self.discord.send_signal(signal)
+        self.telegram.send_signal(signal)
+        log.info(f"Swing signals fired: {count} setups")
 
     def _fire_trend_review(self):
         """Run nightly trend review and write a report file."""
