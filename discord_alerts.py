@@ -83,24 +83,27 @@ class DiscordAlertSender:
         self._load_webhooks()
 
     def _load_webhooks(self):
-        """Load webhook URLs from environment variables."""
-        default_webhook = os.getenv(
-            "DISCORD_WEBHOOK",
-            "https://discord.com/api/webhooks/1470940051977408564/WpsNBFm5buSH2H-5M5hL32DVWrVnVmWSR0ANzm4Jzik1w3nxjeW_OZ8DKLKWHje8CDB8",
-        )
+        """Load webhook URLs — hardcoded per channel for reliability."""
+        # Primary 4-channel layout
         self._webhooks = {
-            "gex_ops": os.getenv("DISCORD_GEX_OPS_WEBHOOK", default_webhook),
-            "market_pulse": os.getenv("DISCORD_MARKET_PULSE_WEBHOOK", default_webhook),
-            "daily_intel": os.getenv("DISCORD_DAILY_INTEL_WEBHOOK", default_webhook),
-            "trading_summary": os.getenv(
-                "DISCORD_TRADING_SUMMARY_WEBHOOK",
-                os.getenv("DISCORD_MARKET_PULSE_WEBHOOK", default_webhook),
-            ),
-            "intraday_fast": os.getenv(
-                "DISCORD_INTRADAY_FAST_WEBHOOK",
-                os.getenv("DISCORD_MARKET_PULSE_WEBHOOK", default_webhook),
-            ),
+            "gex_trades": "https://discord.com/api/webhooks/1474438926100988116/X3eQQWsY39SlYPYMgTWj4NmCZ5fAHtvxw8YifIBLHrfokZ9EdXczyfBriWjOFv7K6mEK",
+            "gex_context": "https://discord.com/api/webhooks/1474439099220885514/yutO6JU4Xl3567Q0Z81RzdZcQt_L44sP4Ww14Nsbxg5Hozum1RNkY9e1iUeZMsUqzPHk",
+            "gex_relay": "https://discord.com/api/webhooks/1474439281241096395/dhmtuGWD6_S9RbIdX8wkBvMOUPE1wZ1j1rnKi8vQZc68ZLnNjR9Mhd6jpYRilowYarE6",
+            "gex_engine": "https://discord.com/api/webhooks/1474439418944163993/mRi25PwZvh_PZQyn7hOSv8gRdmDs3Q_JlGfL9hzm50DLWpt6rWKAUPHqY7rJDiyMlNd6",
         }
+        # Dedicated conviction channel (hardcoded webhook from config)
+        conv_webhook = CFG.get("discord", {}).get("webhooks", {}).get("conviction_signal", "")
+        if conv_webhook and not conv_webhook.startswith("$"):
+            self._webhooks["conviction_signal"] = conv_webhook
+        else:
+            self._webhooks["conviction_signal"] = self._webhooks["gex_trades"]  # fallback to trades channel
+        # Backward-compat: old channel names map to new ones
+        self._webhooks["gex_ops"] = self._webhooks["gex_trades"]
+        self._webhooks["market_pulse"] = self._webhooks["gex_engine"]
+        self._webhooks["daily_intel"] = self._webhooks["gex_context"]
+        self._webhooks["trading_summary"] = self._webhooks["gex_trades"]
+        self._webhooks["intraday_fast"] = self._webhooks["gex_engine"]
+        self._webhooks["consensus"] = self._webhooks["gex_relay"]
 
         if not any(self._webhooks.values()):
             log.warning("No Discord webhook URLs configured.")
@@ -128,7 +131,7 @@ class DiscordAlertSender:
         return success
 
     def _send_webhook(self, url: str, signal: Signal) -> bool:
-        """Send a Discord webhook message."""
+        """Send a Discord webhook message with retry on 5xx/429 errors."""
         ts = signal.timestamp
         if ts.tzinfo is None:
             ts = PT_TZ.localize(ts)
@@ -149,28 +152,46 @@ class DiscordAlertSender:
         if len(payload["content"]) > 1990:
             payload["content"] = payload["content"][:1987] + "..."
 
-        try:
-            resp = requests.post(
-                url,
-                json=payload,
-                timeout=10,
-                headers={"Content-Type": "application/json"},
-            )
+        backoff = [1, 3]
+        for attempt in range(len(backoff) + 1):
+            try:
+                resp = requests.post(
+                    url,
+                    json=payload,
+                    timeout=10,
+                    headers={"Content-Type": "application/json"},
+                )
 
-            if resp.status_code == 204:
-                log.info(f"Sent {signal.signal_type.name} to {signal.channel}")
-                return True
-            elif resp.status_code == 429:
-                retry_after = resp.json().get("retry_after", 5)
-                log.warning(f"Discord rate limited. Retry after {retry_after}s")
-                return False
-            else:
-                log.error(f"Discord webhook failed: {resp.status_code} {resp.text}")
-                return False
+                if resp.status_code == 204:
+                    log.info(f"Sent {signal.signal_type.name} to {signal.channel}")
+                    return True
+                elif resp.status_code == 429:
+                    retry_after = resp.json().get("retry_after", 5)
+                    log.warning(f"Discord rate limited. Retry after {retry_after}s")
+                    if attempt < len(backoff):
+                        time_mod.sleep(retry_after)
+                        continue
+                    return False
+                elif resp.status_code in (500, 502, 503, 504):
+                    log.warning(
+                        f"Discord 5xx error: {resp.status_code} (attempt {attempt + 1}/{len(backoff) + 1})"
+                    )
+                    if attempt < len(backoff):
+                        time_mod.sleep(backoff[attempt])
+                        continue
+                    log.error(f"Discord webhook failed after retries: {resp.status_code}")
+                    return False
+                else:
+                    log.error(f"Discord webhook failed: {resp.status_code} {resp.text}")
+                    return False
 
-        except requests.RequestException as e:
-            log.error(f"Discord webhook error: {e}")
-            return False
+            except requests.RequestException as e:
+                log.error(f"Discord webhook error: {e}")
+                if attempt < len(backoff):
+                    time_mod.sleep(backoff[attempt])
+                    continue
+                return False
+        return False
 
     def send_batch(self, signals: list[Signal]) -> int:
         """Send multiple signals, respecting cooldowns and priority order.

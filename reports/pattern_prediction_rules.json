@@ -1,0 +1,88 @@
+{
+  "lookup_table": [
+    {
+      "group": "C",
+      "slope": "FLAT",
+      "most_common_pattern": "4",
+      "probability": 97.3,
+      "count": 74
+    },
+    {
+      "group": "C",
+      "slope": "ACCELERATING",
+      "most_common_pattern": "1",
+      "probability": 50.0,
+      "count": 4
+    },
+    {
+      "group": "C",
+      "slope": "DECELERATING",
+      "most_common_pattern": "3",
+      "probability": 50.0,
+      "count": 6
+    },
+    {
+      "group": "B",
+      "slope": "FLAT",
+      "most_common_pattern": "4",
+      "probability": 66.7,
+      "count": 6
+    },
+    {
+      "group": "B",
+      "slope": "ACCELERATING",
+      "most_common_pattern": "2",
+      "probability": 60.0,
+      "count": 5
+    },
+    {
+      "group": "B",
+      "slope": "DECELERATING",
+      "most_common_pattern": "3",
+      "probability": 55.6,
+      "count": 9
+    },
+    {
+      "group": "A",
+      "slope": "ACCELERATING",
+      "most_common_pattern": "3",
+      "probability": 100.0,
+      "count": 2
+    },
+    {
+      "group": "A",
+      "slope": "DECELERATING",
+      "most_common_pattern": "5",
+      "probability": 66.7,
+      "count": 3
+    }
+  ],
+  "decision_rules": [
+    {
+      "rule": "first_30_ratio < 0.3 AND gamma_at_10am > +3Bn",
+      "predicted_pattern": "3",
+      "probability": 42.9,
+      "count": 7
+    },
+    {
+      "rule": "open_gamma < -5Bn",
+      "predicted_pattern": "2",
+      "probability": 37.5,
+      "count": 8
+    },
+    {
+      "rule": "gamma_slope > +0.05Bn/min AND open_gamma < 0",
+      "predicted_pattern": "3",
+      "probability": 50.0,
+      "count": 8
+    }
+  ],
+  "critical_question": {
+    "description": "Gamma drops >2Bn in first 30min AND first_30_ratio > 0.5",
+    "count": 2,
+    "pattern_distribution": {
+      "3": 100.0
+    },
+    "recommendation": "FADE (flush+recover)"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "top2_combos": [
+    "C4",
+    "C5"
+  ],
+  "total_trades": 45,
+  "win_rate": 57.8,
+  "total_pnl_pts": 292.6,
+  "max_drawdown_pts": 30.6,
+  "avg_trades_per_week": 3.8
+}

@@ -1,0 +1,54 @@
+{
+  "decision_tree": {
+    "accuracy": 9.1,
+    "train_size": 77,
+    "test_size": 33,
+    "tree_text": "|--- first_30_direction <= -9.13\n|   |--- class: 2\n|--- first_30_direction >  -9.13\n|   |--- class: 4\n"
+  },
+  "confusion_matrix": {
+    "labels": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5"
+    ],
+    "matrix": [
+      [
+        0,
+        3,
+        0,
+        3,
+        0
+      ],
+      [
+        0,
+        2,
+        0,
+        5,
+        0
+      ],
+      [
+        0,
+        1,
+        0,
+        10,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        0
+      ],
+      [
+        0,
+        1,
+        0,
+        7,
+        0
+      ]
+    ]
+  }
+}

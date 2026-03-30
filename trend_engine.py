@@ -574,7 +574,58 @@ def compute_trend_dashboard(
     support_targets = _select_targets(latest.top5_puts, latest.curr_price, side="support")
     resistance_targets = _select_targets(latest.top5_calls, latest.curr_price, side="resistance")
 
-    # Determine bias and smell (after structural adjustments)
+    # ---------------------------------------------------------------
+    # Gamma regime override: absolute gamma level is directional
+    # +15 Bn = dealers net long gamma = buying dips = bullish structure
+    # -15 Bn = dealers net short gamma = selling rallies = bearish
+    # This was MISSING — the engine only tracked gamma deltas, not
+    # absolute regime, causing all-day BEARISH calls on +40Bn days.
+    # ---------------------------------------------------------------
+    regime_gamma_bn = latest.net_gamma / 1e9
+    regime_override_bn = float(TREND_CFG.get("regime_override_bn", 15.0))
+    regime_override_weight = int(TREND_CFG.get("regime_override_weight", 3))
+
+    if regime_gamma_bn >= regime_override_bn:
+        bullish_score += regime_override_weight
+        notes.append(f"Positive gamma regime: {regime_gamma_bn:+.1f}Bn (structural bullish)")
+        flags.append("gamma_regime_bullish")
+    elif regime_gamma_bn <= -regime_override_bn:
+        bearish_score += regime_override_weight
+        notes.append(f"Negative gamma regime: {regime_gamma_bn:+.1f}Bn (structural bearish)")
+        flags.append("gamma_regime_bearish")
+
+    # Moderate regime bonus (weaker signal but still informative)
+    moderate_regime_bn = float(TREND_CFG.get("moderate_regime_bn", 8.0))
+    moderate_regime_weight = int(TREND_CFG.get("moderate_regime_weight", 1))
+    if moderate_regime_bn < regime_override_bn:
+        if moderate_regime_bn <= regime_gamma_bn < regime_override_bn:
+            bullish_score += moderate_regime_weight
+            flags.append("gamma_regime_mod_bullish")
+        elif -regime_override_bn < regime_gamma_bn <= -moderate_regime_bn:
+            bearish_score += moderate_regime_weight
+            flags.append("gamma_regime_mod_bearish")
+
+    # ---------------------------------------------------------------
+    # Price-from-open reality check: a realized move IS directional
+    # evidence regardless of window scoring.  Fixes the "slow grind"
+    # bug where 5/15/30/60 min thresholds miss gradual rallies.
+    # ---------------------------------------------------------------
+    rth_snaps = [s for s in snapshots if s.session_tag == "RTH"]
+    if len(rth_snaps) >= 5:
+        open_price = rth_snaps[0].curr_price
+        move_from_open = latest.curr_price - open_price
+        move_threshold = float(TREND_CFG.get("move_from_open_pts", 20.0))
+        move_weight = int(TREND_CFG.get("move_from_open_weight", 2))
+        if move_from_open >= move_threshold:
+            bullish_score += move_weight
+            notes.append(f"Up {move_from_open:.0f}pts from open (realized bullish)")
+            flags.append("move_from_open_bullish")
+        elif move_from_open <= -move_threshold:
+            bearish_score += move_weight
+            notes.append(f"Down {abs(move_from_open):.0f}pts from open (realized bearish)")
+            flags.append("move_from_open_bearish")
+
+    # Determine bias and smell (after structural + regime adjustments)
     score_threshold = int(TREND_CFG.get("score_threshold", 4))
     smell_threshold = int(TREND_CFG.get("smell_threshold", 2))
     bias = "NEUTRAL"

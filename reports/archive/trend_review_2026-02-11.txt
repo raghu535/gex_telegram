@@ -1,0 +1,13 @@
+Trend Review (2026-02-11 01:20 PM PT)
+Window: last 10 days | Drop: 30.0 pts in 60m | Lead: 60m
+
+Date | Alerts | Bearish Alerts | Heartbeats | Drop Events | Events With Lead Alert
+2026-02-04 | 113 | 74 | 32 | 3 | 2
+2026-02-05 | 105 | 52 | 33 | 3 | 2
+2026-02-06 | 115 | 23 | 34 | 0 | 0
+2026-02-09 | 69 | 18 | 33 | 0 | 0
+2026-02-10 | 68 | 43 | 23 | 0 | 0
+2026-02-11 | 138 | 101 | 14 | 1 | 1
+
+Event hit rate: 5/7 (71.4%)
+Total alerts: 608 (bearish 311, heartbeat 169)

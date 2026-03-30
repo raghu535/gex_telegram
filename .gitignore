@@ -1,13 +1,42 @@
+# Python
 __pycache__/
-*.pyc
-*.session
-*.session-journal
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+.venv/
+venv/
+env/
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Database
 *.db
-*.log
-cooldown_state.json
-telegram_cooldown_state.json
+*.sqlite
+*.sqlite3
+
+# Environment
+.env
+.env.*
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data files
+*.csv
+
+# Compiled
+*.pyc
+
 nul
-_script.b64
-_test_gen.py
-_writer.py
-reports/

@@ -1,0 +1,252 @@
+{
+  "data_scope": {
+    "table": "gex_snapshots",
+    "session_tag": "RTH",
+    "rth_row_count": 33813,
+    "date_range": {
+      "min_d": "2025-10-22",
+      "max_d": "2026-02-19",
+      "n_days": 83
+    }
+  },
+  "assumptions": {
+    "trend_correct_rule": "TREND is correct if main move is SWEEP_WINDOW OR absolute close-open >= 20 points (all-day trend proxy).",
+    "main_move_tie_breaker": "earliest window in order SWEEP, ROTATION, DEAD_ZONE, PIN_WINDOW"
+  },
+  "baseline_summary": {
+    "days": 83,
+    "overall_accuracy_pct": 12.05,
+    "accuracy_by_day_type": {
+      "PIN": {
+        "correct": 1,
+        "total": 16,
+        "accuracy_pct": 6.25
+      },
+      "ROTATION": {
+        "correct": 1,
+        "total": 55,
+        "accuracy_pct": 1.82
+      },
+      "SWEEP": {
+        "correct": 3,
+        "total": 7,
+        "accuracy_pct": 42.86
+      },
+      "TREND": {
+        "correct": 5,
+        "total": 5,
+        "accuracy_pct": 100.0
+      }
+    },
+    "average_main_move_size_by_day_type": {
+      "PIN": 33.33,
+      "ROTATION": 51.47,
+      "SWEEP": 67.6,
+      "TREND": 31.9
+    },
+    "day_type_occurrence": {
+      "ROTATION": 55,
+      "PIN": 16,
+      "SWEEP": 7,
+      "TREND": 5
+    },
+    "average_move_per_window": {
+      "SWEEP_WINDOW": 21.97,
+      "ROTATION_WINDOW": 20.09,
+      "DEAD_ZONE": 35.95,
+      "PIN_WINDOW": 29.51
+    },
+    "main_move_window_frequency": {
+      "PIN_WINDOW": 14,
+      "DEAD_ZONE": 29,
+      "SWEEP_WINDOW": 29,
+      "ROTATION_WINDOW": 11
+    }
+  },
+  "alternate_threshold_tests": {
+    "baseline": {
+      "sweep_gamma_threshold": -2.0,
+      "pin_gamma_threshold": 5.0,
+      "sweep_spread_threshold": 10.0,
+      "overall_accuracy_pct": 12.05,
+      "days": 83,
+      "accuracy_by_day_type": {
+        "PIN": {
+          "correct": 1,
+          "total": 16,
+          "accuracy_pct": 6.25
+        },
+        "ROTATION": {
+          "correct": 1,
+          "total": 55,
+          "accuracy_pct": 1.82
+        },
+        "SWEEP": {
+          "correct": 3,
+          "total": 7,
+          "accuracy_pct": 42.86
+        },
+        "TREND": {
+          "correct": 5,
+          "total": 5,
+          "accuracy_pct": 100.0
+        }
+      }
+    },
+    "sweep_-3_only": {
+      "sweep_gamma_threshold": -3.0,
+      "pin_gamma_threshold": 5.0,
+      "sweep_spread_threshold": 10.0,
+      "overall_accuracy_pct": 12.05,
+      "days": 83,
+      "accuracy_by_day_type": {
+        "PIN": {
+          "correct": 1,
+          "total": 16,
+          "accuracy_pct": 6.25
+        },
+        "ROTATION": {
+          "correct": 1,
+          "total": 55,
+          "accuracy_pct": 1.82
+        },
+        "SWEEP": {
+          "correct": 3,
+          "total": 7,
+          "accuracy_pct": 42.86
+        },
+        "TREND": {
+          "correct": 5,
+          "total": 5,
+          "accuracy_pct": 100.0
+        }
+      }
+    },
+    "pin_+3_only": {
+      "sweep_gamma_threshold": -2.0,
+      "pin_gamma_threshold": 3.0,
+      "sweep_spread_threshold": 10.0,
+      "overall_accuracy_pct": 13.25,
+      "days": 83,
+      "accuracy_by_day_type": {
+        "PIN": {
+          "correct": 2,
+          "total": 21,
+          "accuracy_pct": 9.52
+        },
+        "ROTATION": {
+          "correct": 1,
+          "total": 50,
+          "accuracy_pct": 2.0
+        },
+        "SWEEP": {
+          "correct": 3,
+          "total": 7,
+          "accuracy_pct": 42.86
+        },
+        "TREND": {
+          "correct": 5,
+          "total": 5,
+          "accuracy_pct": 100.0
+        }
+      }
+    },
+    "spread_15_only": {
+      "sweep_gamma_threshold": -2.0,
+      "pin_gamma_threshold": 5.0,
+      "sweep_spread_threshold": 15.0,
+      "overall_accuracy_pct": 12.05,
+      "days": 83,
+      "accuracy_by_day_type": {
+        "PIN": {
+          "correct": 1,
+          "total": 16,
+          "accuracy_pct": 6.25
+        },
+        "ROTATION": {
+          "correct": 1,
+          "total": 55,
+          "accuracy_pct": 1.82
+        },
+        "SWEEP": {
+          "correct": 3,
+          "total": 7,
+          "accuracy_pct": 42.86
+        },
+        "TREND": {
+          "correct": 5,
+          "total": 5,
+          "accuracy_pct": 100.0
+        }
+      }
+    }
+  },
+  "grid_search": [
+    {
+      "sweep_gamma_threshold": -2.0,
+      "pin_gamma_threshold": 3.0,
+      "sweep_spread_threshold": 10.0,
+      "overall_accuracy_pct": 13.25,
+      "days": 83
+    },
+    {
+      "sweep_gamma_threshold": -2.0,
+      "pin_gamma_threshold": 3.0,
+      "sweep_spread_threshold": 15.0,
+      "overall_accuracy_pct": 13.25,
+      "days": 83
+    },
+    {
+      "sweep_gamma_threshold": -3.0,
+      "pin_gamma_threshold": 3.0,
+      "sweep_spread_threshold": 10.0,
+      "overall_accuracy_pct": 13.25,
+      "days": 83
+    },
+    {
+      "sweep_gamma_threshold": -3.0,
+      "pin_gamma_threshold": 3.0,
+      "sweep_spread_threshold": 15.0,
+      "overall_accuracy_pct": 13.25,
+      "days": 83
+    },
+    {
+      "sweep_gamma_threshold": -2.0,
+      "pin_gamma_threshold": 5.0,
+      "sweep_spread_threshold": 10.0,
+      "overall_accuracy_pct": 12.05,
+      "days": 83
+    },
+    {
+      "sweep_gamma_threshold": -2.0,
+      "pin_gamma_threshold": 5.0,
+      "sweep_spread_threshold": 15.0,
+      "overall_accuracy_pct": 12.05,
+      "days": 83
+    },
+    {
+      "sweep_gamma_threshold": -3.0,
+      "pin_gamma_threshold": 5.0,
+      "sweep_spread_threshold": 10.0,
+      "overall_accuracy_pct": 12.05,
+      "days": 83
+    },
+    {
+      "sweep_gamma_threshold": -3.0,
+      "pin_gamma_threshold": 5.0,
+      "sweep_spread_threshold": 15.0,
+      "overall_accuracy_pct": 12.05,
+      "days": 83
+    }
+  ],
+  "best_threshold_combo": {
+    "sweep_gamma_threshold": -2.0,
+    "pin_gamma_threshold": 3.0,
+    "sweep_spread_threshold": 10.0,
+    "overall_accuracy_pct": 13.25,
+    "days": 83
+  },
+  "files": {
+    "per_day_csv": "reports\\day_type_window_backtest.csv"
+  }
+}

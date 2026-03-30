@@ -510,7 +510,7 @@ def test_signal_interpreter():
     regime_signals = [s for s in signals2 if s.signal_type == SignalType.REGIME_SHIFT]
     check("Regime shift detected (after debounce)", len(regime_signals) > 0)
     if regime_signals:
-        check("Shift to UNCONTROLLED", "UNCONTROLLED" in regime_signals[0].message)
+        check("Shift to UNCONTROLLED", regime_signals[0].metadata.get("to") == "UNCONTROLLED")
         print(f"    {regime_signals[0].title}")
 
     # Wall breach test
@@ -579,11 +579,11 @@ def test_signal_interpreter():
     # Scheduled signal generation
     pulse = interpreter.generate_rth_pulse(snap1, m1h, None)
     check("RTH pulse generated", pulse is not None)
-    check("Pulse channel is market_pulse", pulse.channel == "market_pulse")
+    check("Pulse channel is gex_engine", pulse.channel == "gex_engine")
 
     final = interpreter.generate_final_15(snap1, None)
     check("Final 15 generated", final is not None)
-    check("Final 15 channel is daily_intel", final.channel == "daily_intel")
+    check("Final 15 channel is gex_context", final.channel == "gex_context")
 
     brief = interpreter.generate_morning_brief(snap1, None, None)
     check("Morning brief generated", brief is not None)

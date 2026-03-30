@@ -70,9 +70,23 @@ def init_db():
     conn.close()
 
 
+def _is_duplicate(conn: sqlite3.Connection, snapshot: GEXSnapshot, window_sec: int = 90) -> bool:
+    """Check if a snapshot with same price+gamma already exists within window_sec."""
+    ts = snapshot.timestamp_pt.timestamp()
+    row = conn.execute(
+        "SELECT id FROM gex_snapshots "
+        "WHERE timestamp_pt > ? AND curr_price = ? AND net_gamma = ? LIMIT 1",
+        (ts - window_sec, snapshot.curr_price, snapshot.net_gamma),
+    ).fetchone()
+    return row is not None
+
+
 def save_snapshot(snapshot: GEXSnapshot) -> int:
-    """Save a GEXSnapshot to the database. Returns the row id."""
+    """Save a GEXSnapshot to the database. Returns the row id, or -1 if duplicate."""
     conn = get_conn()
+    if _is_duplicate(conn, snapshot):
+        conn.close()
+        return -1
     cursor = conn.execute(
         """INSERT INTO gex_snapshots
         (timestamp_pt, date_pt, time_pt, session_tag,
@@ -239,11 +253,13 @@ def save_daily_summary(date_pt: str, summary: dict):
 
 
 def purge_old_data(retention_days: int = 30):
-    """Delete snapshots and summaries older than retention_days."""
-    cutoff = (datetime.now(PT_TZ) - timedelta(days=retention_days)).timestamp()
+    """Delete old summary rows only.
+
+    Historical snapshots are intentionally retained indefinitely because they
+    are used for long-horizon backtests and are expensive to reconstruct.
+    """
     cutoff_date = (datetime.now(PT_TZ) - timedelta(days=retention_days)).strftime("%Y-%m-%d")
     conn = get_conn()
-    conn.execute("DELETE FROM gex_snapshots WHERE timestamp_pt < ?", (cutoff,))
     conn.execute("DELETE FROM daily_summaries WHERE date_pt < ?", (cutoff_date,))
     conn.commit()
     conn.close()

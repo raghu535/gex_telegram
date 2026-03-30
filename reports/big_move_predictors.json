@@ -1,0 +1,110 @@
+{
+  "analysis_1": {
+    "total_days": 127,
+    "counts": {
+      "day_range_gt_100": 13,
+      "day_range_gt_50": 62,
+      "day_range_gt_30": 99,
+      "max_2hr_move_gt_50": 54,
+      "max_2hr_move_gt_30": 93,
+      "max_1hr_move_gt_20": 108,
+      "last_30min_move_gt_15": 14,
+      "last_hour_move_gt_20": 17
+    },
+    "hour_bucket_distribution": {
+      "12:00-2:00": 51,
+      "9:30-10:30": 38,
+      "10:30-12:00": 21,
+      "2:00-3:00": 15,
+      "NaN": 2
+    },
+    "summary_line": "On 48.8% of days there is a 50+ pt move somewhere in the day. On 73.2% there is a 30+ pt 2-hour move. On 13.4% the last hour moves 20+ pts."
+  },
+  "analysis_2": {
+    "group_stats": {
+      "BIG": {
+        "count": 62,
+        "morning_state": {
+          "avg_open_gamma_bn": 1.180455336919355,
+          "avg_vix": 18.190161397380212,
+          "avg_open_spread": 28402.09677419355,
+          "avg_overnight_gap": -3.9685483870967038,
+          "avg_prior_day_range": 68.89693548387099,
+          "avg_prior_day_eod_gamma_bn": -3.0181510752580647
+        },
+        "prior_day_state": {
+          "avg_prior_eod_gamma_bn": -3.0181510752580647,
+          "avg_prior_day_range": 68.89693548387099,
+          "avg_prior_day_close_em_pos": -0.208031889013079,
+          "prior_day_compressed_rate": 0.20967741935483872
+        }
+      },
+      "MEDIUM": {
+        "count": 37,
+        "morning_state": {
+          "avg_open_gamma_bn": 2.7959743042972973,
+          "avg_vix": 16.36351355990848,
+          "avg_open_spread": 16630.27027027027,
+          "avg_overnight_gap": 8.939722222222144,
+          "avg_prior_day_range": 44.96111111111112,
+          "avg_prior_day_eod_gamma_bn": 5.691243270333333
+        },
+        "prior_day_state": {
+          "avg_prior_eod_gamma_bn": 5.691243270333333,
+          "avg_prior_day_range": 44.96111111111112,
+          "avg_prior_day_close_em_pos": 0.2757945291490046,
+          "prior_day_compressed_rate": 0.2972972972972973
+        }
+      },
+      "SMALL": {
+        "count": 28,
+        "morning_state": {
+          "avg_open_gamma_bn": 4.431583622571428,
+          "avg_vix": 15.940714393343244,
+          "avg_open_spread": 19116.785714285714,
+          "avg_overnight_gap": 0.8346428571428532,
+          "avg_prior_day_range": 43.97499999999997,
+          "avg_prior_day_eod_gamma_bn": 9.216517047857144
+        },
+        "prior_day_state": {
+          "avg_prior_eod_gamma_bn": 9.216517047857144,
+          "avg_prior_day_range": 43.97499999999997,
+          "avg_prior_day_close_em_pos": 0.34590252120230697,
+          "prior_day_compressed_rate": 0.32142857142857145
+        }
+      }
+    },
+    "night_before_predictors": {
+      "prior_eod_gamma_lt_neg5bn": {
+        "instances": 20,
+        "hit_rate": 0.75
+      },
+      "prior_day_compressed": {
+        "instances": 33,
+        "hit_rate": 0.3939393939393939
+      },
+      "vix_prev_close_gt_20": {
+        "instances": 19,
+        "hit_rate": 0.8421052631578947
+      },
+      "prior_eod_gamma_lt_neg5bn_and_compressed": {
+        "instances": 3,
+        "hit_rate": 1.0
+      }
+    },
+    "ten_am_predictors": {
+      "first30_ratio_gt_0p3": {
+        "instances": 29,
+        "hit_rate": 0.6551724137931034
+      },
+      "first30_ratio_gt_0p3_and_open_gamma_lt_neg3bn": {
+        "instances": 12,
+        "hit_rate": 0.75
+      },
+      "first30_swept_prior_high_or_low": {
+        "instances": 58,
+        "hit_rate": 0.41379310344827586
+      }
+    }
+  }
+}

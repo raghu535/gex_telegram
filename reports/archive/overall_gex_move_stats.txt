@@ -1,0 +1,29 @@
+Overall GEX/Move Stats (RTH)
+Net gamma identity: net = call + put (put is negative) = call - abs(put).
+
+Days in DB (RTH): 8 | Usable quality days: 7
+Excluded dates: ['2026-01-15']
+
+Gamma scale (Bn):
+  Call p50/p90/p95: 14.79/25.29/29.51
+  |Put| p50/p90/p95: 14.53/19.28/22.89
+  Net p10/p50/p90: -16.08/-0.04/16.53
+  |Net| p50/p90/p95: 9.61/18.31/23.75
+
+Buckets:
+  Trend days (range>=80): {'n': 4, 'med_range': 105.6, 'med_close_dpx': -61.4, 'med_max_up': 20.2, 'med_max_dn': 91.3, 'p_t40': 1.0, 'p_t60': 1.0, 'p_close_red': 0.75}
+  Mid days (40<range<80): {'n': 2, 'med_range': 69.5, 'med_close_dpx': 21.0, 'med_max_up': 47.6, 'med_max_dn': 21.8, 'p_t40': 1.0, 'p_t60': 0.0, 'p_close_red': 0.0}
+  Small days (range<=40): {'n': 1, 'med_range': 26.9, 'med_close_dpx': 10.1, 'med_max_up': 21.5, 'med_max_dn': 5.4, 'p_t40': 0.0, 'p_t60': 0.0, 'p_close_red': 0.0}
+  Open gamma <0: {'n': 5, 'med_range': 101.0, 'med_close_dpx': -40.7, 'med_max_up': 30.3, 'med_max_dn': 83.6, 'p_t40': 1.0, 'p_t60': 0.8, 'p_close_red': 0.6}
+  Open gamma >=0: {'n': 2, 'med_range': 45.0, 'med_close_dpx': 22.9, 'med_max_up': 33.8, 'med_max_dn': 11.2, 'p_t40': 0.5, 'p_t60': 0.0, 'p_close_red': 0.0}
+  First-hour gamma <= -10Bn: {'n': 3, 'med_range': 101.0, 'med_close_dpx': -40.7, 'med_max_up': 10.1, 'med_max_dn': 83.6, 'p_t40': 1.0, 'p_t60': 1.0, 'p_close_red': 0.67}
+
+Day table:
+date | range | open->close | open_g | close_g | first>=40 | first>=60 | low_t | high_t | below_open_floor | above_open_wall
+2026-02-04 |  +93.7 |   -40.7 |   -3.8 |  -18.0 | 08:41:38 | 09:27:16 | 09:50:41 | 06:48:35 | 08:47:45 |     None
+2026-02-05 | +101.0 |   -82.1 |  -25.1 |  -28.0 | 06:32:25 | 06:32:25 | 07:33:49 | 06:30:03 | 06:30:03 |     None
+2026-02-06 | +110.2 |  +105.3 |  -10.5 |  +19.9 | 06:39:12 | 08:08:02 | 06:30:32 | 12:51:34 | 06:30:32 | 06:33:32
+2026-02-09 |  +63.0 |   +35.6 |   +3.1 |  +23.7 | 11:45:48 |     None | 09:31:43 | 12:13:06 |     None | 06:30:23
+2026-02-10 |  +26.9 |   +10.1 |  +16.5 |  +12.7 |     None |     None | 09:49:11 | 10:31:30 | 06:30:11 | 08:45:00
+2026-02-11 |  +76.0 |    +6.4 |   -3.0 |   -2.2 | 09:31:22 |     None | 10:27:01 | 09:31:22 | 06:31:06 |     None
+2026-02-12 | +129.3 |   -90.7 |   -4.3 |  -17.8 | 08:02:34 | 08:14:17 | 10:29:19 | 09:41:32 | 06:31:20 |     None

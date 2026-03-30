@@ -5,37 +5,62 @@ timezone: America/Los_Angeles
 
 telegram:
   channel: spotgammaraed
+  primary_gex_channel: spotgammaraed  # only parse GEX snapshots from this channel
   channels:
     - spotgammaraed
     - SmartStrategy_Trader
     - SPXW500
     - ipospx
     - abo_shaqran
+    - MGTSPXAI_bot
+    - controlOptionalspx
   env_path: C:/Code/antigravity/.env
 
 discord:
   webhooks:
-    gex_ops: ${DISCORD_GEX_OPS_WEBHOOK}
-    market_pulse: ${DISCORD_MARKET_PULSE_WEBHOOK}
-    daily_intel: ${DISCORD_DAILY_INTEL_WEBHOOK}
-    trading_summary: ${DISCORD_TRADING_SUMMARY_WEBHOOK}
-    intraday_fast: ${DISCORD_INTRADAY_FAST_WEBHOOK}
+    gex_trades: "https://discord.com/api/webhooks/1474438926100988116/X3eQQWsY39SlYPYMgTWj4NmCZ5fAHtvxw8YifIBLHrfokZ9EdXczyfBriWjOFv7K6mEK"
+    gex_context: "https://discord.com/api/webhooks/1474439099220885514/yutO6JU4Xl3567Q0Z81RzdZcQt_L44sP4Ww14Nsbxg5Hozum1RNkY9e1iUeZMsUqzPHk"
+    gex_relay: "https://discord.com/api/webhooks/1474439281241096395/dhmtuGWD6_S9RbIdX8wkBvMOUPE1wZ1j1rnKi8vQZc68ZLnNjR9Mhd6jpYRilowYarE6"
+    gex_engine: "https://discord.com/api/webhooks/1474439418944163993/mRi25PwZvh_PZQyn7hOSv8gRdmDs3Q_JlGfL9hzm50DLWpt6rWKAUPHqY7rJDiyMlNd6"
+    conviction_signal: "https://discord.com/api/webhooks/1474429837975486526/-_nVam8a7mOhjpeWIIel4E4h1r04RNehOYPzsPEczxqEJJUBU3O1aT6xF9nEASMYq_dz"
   routing:
-    gex_ops:
-      - regime_shift
+    gex_trades:
       - wall_breach
       - gamma_squeeze
-      - bounce_zone
-      - gamma_compression
-      - strike_flip
-    market_pulse:
-      - rth_pulse
-    daily_intel:
+      - gamma_snap
+      - lotto
+      - ma_snap
+      - level_approach
+      - morning_bet
+      - em_fade
+      - pin_trade
+    gex_context:
+      - regime_shift
       - overnight_drift
       - final_15
       - morning_brief
-    trading_summary:
+      - morning_checklist
+      - pin_forecast
+      - gap_alert
+      - morning_read
+    gex_relay:
+      - spx_million
+      - market_consensus
+      - qqq_context
+    conviction_signal:
+      - conviction_signal
+    gex_engine:
+      - rth_pulse
+      - trend_dashboard
+      - hourly_recap
       - quiet_summary
+      - bounce_zone
+      - gamma_compression
+      - strike_flip
+      - micro_pulse
+      - data_lag
+      - data_restored
+      - gex_trend
 
 alerts:
   # full: all alerts; deep_context: suppress intraday noise, keep context/scheduled intel
@@ -119,6 +144,14 @@ trend:
   structural_weight: 1
   heartbeat_secs: 300
   min_emit_score: 6
+  # Gamma regime override — absolute gamma level is directional
+  regime_override_bn: 15.0      # |gamma| > 15Bn = strong structural bias
+  regime_override_weight: 3     # Weight for strong regime override
+  moderate_regime_bn: 8.0       # |gamma| > 8Bn = moderate structural bias
+  moderate_regime_weight: 1     # Weight for moderate regime
+  # Price-from-open reality check — realized moves are evidence
+  move_from_open_pts: 20.0      # Move > 20pts from open = directional evidence
+  move_from_open_weight: 2      # Weight for move-from-open
 
 day_profile:
   # Classify early session profile for trend-noise gating.
@@ -176,6 +209,18 @@ cooldowns:
   gap_alert: 600
   micro_pulse: 300
   gamma_snap: 600
+  level_approach: 1800
+  ma_snap: 86400
+  lotto: 86400
+  market_consensus: 900
+  conviction_signal: 600
+  morning_checklist: 86400
+  morning_read: 86400
+  morning_bet: 86400
+  em_fade: 3600
+  pin_trade: 86400
+  gex_trend: 600
+  qqq_context: 900
 
 scheduled:
   morning_brief_time: "06:00"
@@ -185,17 +230,18 @@ scheduled:
   trend_review_time: "13:20"
   hourly_recap_window_min: 5
   pin_forecast_time: "12:30"
+  close_nowcast_time: "12:55"
   gap_alert_time: "13:10"
 
 data_feed:
   stale_seconds: 300
   check_interval_seconds: 60
-  alert_channel: gex_ops
+  alert_channel: gex_engine
 
 quiet_summary:
   enabled: true
   interval_seconds: 600
-  alert_channel: trading_summary
+  alert_channel: gex_engine
 
 micro_pulse:
   enabled: true
@@ -210,13 +256,13 @@ micro_pulse:
   invalidation_buffer_pts: 2
   target1_pts: 5
   target2_pts: 10
-  alert_channel: intraday_fast
+  alert_channel: gex_engine
 
 spx_million:
-  alert_channel: market_pulse
+  alert_channel: gex_relay
 
 gap_alert:
-  alert_channel: daily_intel
+  alert_channel: gex_context
   delay_minutes: 10
 
 timestamps:
@@ -272,35 +318,111 @@ gamma_snap:
   short_s2_gamma_bn: 10
   # LIQUIDITY SWEEPS: price breaks 1hr high/low then reverses
   sweep_gamma_bn: 5         # L1: G<-5 for low sweep, S3: G>+5 for high sweep
+  # SHORT S4/S5/S6: DISABLED for Telegram (audit: not reliable for real money)
+  # Kept in Discord/replay only for observation. Will be replaced by level-based alerts.
+  s4_enabled: false         # S4: NEG_GAMMA_FADE — 0 signals or false signals
+  s4_rally_pts: 15
+  s4_gamma_bn: -2
+  s5_enabled: false         # S5: WALL_COLLAPSE — fires too much on flickering spreads
+  s5_spread_threshold: 5
+  s5_prior_spread_min: 10
+  s6_enabled: false         # S6: GAMMA_ACCEL — 50/50, fires at exhaustion
+  s6_dg_threshold: -2
+  s6_gamma_floor: -4
 
 telegram_alerts:
-  enabled: true
+  enabled: false
   bot_token_env: TELEGRAM_BOT_TOKEN  # read from .env
   cooldowns:
     bounce_zone: 900      # 15min (vs 5min for Discord) — reduces noise
     regime_shift: 600     # 10min
     wall_breach: 300      # 5min
     gamma_squeeze: 300    # 5min
+    rth_pulse: 300        # 5min — market status
+    micro_pulse: 300      # 5min — quick moves
+    trend_dashboard: 300  # 5min — trend updates
+    quiet_summary: 600    # 10min
+    hourly_recap: 3600    # 1hr
+    overnight_drift: 1800 # 30min
     morning_checklist: 86400  # once per day
     final_15: 86400           # once per day
     gap_alert: 86400          # once per day
     gamma_snap: 900           # 15min (default for T3/S1)
+    market_consensus: 900    # 15min
     "gamma_snap:LONG_T1": 900 # 15min — gives 3-4 alerts over a multi-hour T1 event
     "gamma_snap:LONG_T1_LATE": 300  # 5min — late session T1, 0DTE amplified, more urgent
     "gamma_snap:SHORT_S2": 900 # 15min — gamma ceiling reversal
     "gamma_snap:LONG_L1": 900  # 15min — liquidity sweep low grab
     "gamma_snap:SHORT_S3": 900 # 15min — liquidity sweep high grab
+    "gamma_snap:SHORT_S4": 900 # 15min — neg gamma rally fade
+    "gamma_snap:SHORT_S5": 900 # 15min — wall collapse
+    "gamma_snap:SHORT_S6": 900 # 15min — gamma acceleration
     "gamma_snap:LONG_B1": 86400  # once per day — early rally
     "gamma_snap:SHORT_BEAR": 86400  # once per day — early selloff
     "gamma_snap:BUTTERFLY_PIN_STANDARD": 86400  # once per day — butterfly pin
     "gamma_snap:BUTTERFLY_PIN_HIGH": 86400      # once per day — high confidence pin
+    level_approach: 1800      # 30min per level — anticipation alert
+    spx_million: 300          # 5min — Arabic channel trade calls
+    ma_snap: 86400            # once per day per side
+    "ma_snap:LONG": 86400     # once per day — rubber band
+    "ma_snap:SHORT": 86400    # once per day — dead cat fade
+    lotto: 86400              # once per day — lotto short
+    pin_forecast: 86400       # once per day — close nowcast
     data_lag: 300             # 5min
+    conviction_signal: 600    # 10min — cross-system conviction
     data_restored: 0          # immediate
+    morning_brief: 86400      # once per day
+    morning_read: 86400       # once per day
+    morning_bet: 86400        # once per day
+    em_fade: 3600             # 1hr
+    pin_trade: 86400          # once per day
+    gex_trend: 600            # 10min
+    qqq_context: 900          # 15min
   channels:
-    gex_ops: -1003526175764
-    market_pulse: -1003897349288
-    daily_intel: -1003763195313
+    gex_trades: -1003526175764
+    gex_context: -1003526175764
+    gex_relay: -1003526175764
+    gex_engine: -1003526175764
+
+consensus:
+  window_minutes: 15
+  min_channels: 1
+  cooldown_seconds: 900
+  alert_channel: gex_relay
+  channels:
+    - MGTSPXAI_bot
+    - controlOptionalspx
+    - SPXW500
+    - ipospx
+    - abo_shaqran
+    - SmartStrategy_Trader
+
+delivery_watchdog:
+  enabled: true
+  missed_event_threshold_min: 5
+  midday_report_time: "11:00"
+  eod_report_time: "13:15"
+  alert_channel: gex_engine
+
+conviction:
+  enabled: true
+  min_score: 6.0
+  runner_score: 7.0
+  runner_room_pts: 30
+  cooldown_secs: 600
+  antigravity_cache_ttl: 120
+  optionsflow_cache_ttl: 300
+  request_timeout: 5
+  antigravity_recommendation_url: "http://localhost:5000/api/trading-recommendation"
+  antigravity_trap_url: "http://localhost:5000/api/market-data/trap-signal"
+  optionsflow_url: "http://localhost:9080/api/intelligence"
+
+qqq_analysis:
+  enabled: true
+  beta: 1.2
+  intraday_window_min: 30
+  cache_seconds: 120
 
 database:
   path: gex_data.db
-  retention_days: 30
+  retention_days: 9999

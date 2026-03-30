@@ -1,0 +1,22 @@
+Comparison window: 06:30-09:00 PT
+Signal types: TREND_DASHBOARD, WALL_BREACH, REGIME_SHIFT (cooldown-aware replay simulation)
+
+Date: 2026-02-11
+  Open: 06:31:06 6941.81 g-3.04Bn
+  Close: 08:58:30 6941.81 dPx +0.00 g-4.52Bn
+  High/Low: 6941.81 / 6941.81
+  Condensed signals: 15 {'WALL_BREACH': 1, 'TREND_DASHBOARD': 13, 'REGIME_SHIFT': 1}
+  Quality: rows=204 unique_prices=1 unchanged_ratio=100.0% range=6941.81-6941.81
+
+Date: 2026-02-12
+  Open: 06:31:20 6941.47 g-4.33Bn
+  Close: 08:59:32 6941.47 dPx +0.00 g-5.79Bn
+  High/Low: 6957.22 / 6855.27
+  Condensed signals: 27 {'TREND_DASHBOARD': 26, 'WALL_BREACH': 1}
+  Quality: rows=194 unique_prices=93 unchanged_ratio=5.2% range=6855.27-6957.22
+
+Delta (2026-02-12 minus 2026-02-11)
+  Open px: -0.34
+  Window dPx: +0.00
+  Intrawindow low delta: -86.54
+  Condensed signal count delta: +12

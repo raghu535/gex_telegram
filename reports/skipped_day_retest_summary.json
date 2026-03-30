@@ -1,0 +1,83 @@
+{
+  "classified_days": 102,
+  "base_traded_days": 21,
+  "skipped_days_total": 81,
+  "skipped_group_counts": {
+    "C3": 53,
+    "B3": 9,
+    "B2": 7,
+    "B1": 7,
+    "C1": 4,
+    "A1": 1
+  },
+  "nearest_rule_tests": {
+    "B2_as_C2": {
+      "skipped_days": 7,
+      "additional_trades": 7,
+      "wins": 5,
+      "win_rate_pct": 71.42857142857143,
+      "total_pnl_dollars": 1234.9111923663916,
+      "avg_pnl_dollars": 176.4158846237702
+    },
+    "B3_as_EMFade": {
+      "skipped_days": 9,
+      "additional_trades": 3,
+      "wins": 2,
+      "win_rate_pct": 66.66666666666666,
+      "total_pnl_dollars": 31.613026735629496,
+      "avg_pnl_dollars": 10.537675578543165
+    },
+    "B1_as_A1": {
+      "skipped_days": 7,
+      "additional_trades": 7,
+      "wins": 2,
+      "win_rate_pct": 28.57142857142857,
+      "total_pnl_dollars": -2143.420424405689,
+      "avg_pnl_dollars": -306.2029177722413
+    }
+  },
+  "combined_strategy_impact": {
+    "base_trades": 21,
+    "base_win_rate_pct": 80.95238095238095,
+    "base_total_pnl_dollars": 6500.0,
+    "additional_trades": 17,
+    "additional_win_rate_pct": 52.94117647058824,
+    "additional_total_pnl_dollars": -876.8962053036682,
+    "combined_trades": 38,
+    "combined_win_rate_pct": 68.42105263157895,
+    "combined_total_pnl_dollars": 5623.1037946963315
+  },
+  "c2_trades": 13,
+  "c2_gamma_pattern_distribution": {
+    "Pattern 3 - Pin Buildup": 6,
+    "Pattern 1 - Steady Positive Pin": 5,
+    "Pattern 2 - Erosion/Flat Pin": 2
+  },
+  "pattern3_pin_buildup_count": 6,
+  "c2_gamma_pattern_performance": [
+    {
+      "gamma_pattern": "Pattern 1 - Steady Positive Pin",
+      "trades": 5,
+      "win_rate_pct": 80.0,
+      "avg_pnl_dollars": 300.0
+    },
+    {
+      "gamma_pattern": "Pattern 2 - Erosion/Flat Pin",
+      "trades": 2,
+      "win_rate_pct": 100.0,
+      "avg_pnl_dollars": 500.0
+    },
+    {
+      "gamma_pattern": "Pattern 3 - Pin Buildup",
+      "trades": 6,
+      "win_rate_pct": 100.0,
+      "avg_pnl_dollars": 500.0
+    }
+  ],
+  "files": {
+    "skipped_day_detail": "reports\\skipped_day_nearest_rule_test.csv",
+    "skipped_actual_summary": "reports\\skipped_day_actual_behavior_by_subgroup.csv",
+    "c2_pattern_detail": "reports\\c2_gamma_pattern_breakdown.csv"
+  },
+  "note": "Pattern 3 is inferred for this analysis: gamma_10am-open_gamma >= +2Bn and gamma_10am > +3Bn."
+}

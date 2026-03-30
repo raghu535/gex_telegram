@@ -25,22 +25,23 @@ _cfg_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.yam
 with open(_cfg_path, "r") as f:
     CFG = yaml.safe_load(f)
 
-# Signal types eligible for Telegram delivery
-TELEGRAM_ELIGIBLE = {
-    # High-priority intraday signals
-    SignalType.BOUNCE_ZONE,
-    SignalType.REGIME_SHIFT,
-    SignalType.WALL_BREACH,
-    SignalType.GAMMA_SQUEEZE,
-    SignalType.GAMMA_SNAP,
-    # Once-per-day scheduled alerts
-    SignalType.MORNING_CHECKLIST,
-    SignalType.FINAL_15,
-    SignalType.GAP_ALERT,
-    # Operational
-    SignalType.DATA_LAG,
-    SignalType.DATA_RESTORED,
+# Signal categories for Telegram routing
+TRADE_SIGNALS = {
+    SignalType.GAMMA_SNAP, SignalType.BOUNCE_ZONE, SignalType.LEVEL_APPROACH,
+    SignalType.WALL_BREACH, SignalType.GAMMA_SQUEEZE, SignalType.MA_SNAP, SignalType.LOTTO,
+    SignalType.MORNING_BET, SignalType.EM_FADE, SignalType.PIN_TRADE,
+    SignalType.MICRO_PULSE,
 }
+RELAY_SIGNALS = {SignalType.SPX_MILLION, SignalType.MARKET_CONSENSUS, SignalType.QQQ_CONTEXT}
+COMMENTARY_SIGNALS = {
+    SignalType.REGIME_SHIFT, SignalType.MORNING_CHECKLIST, SignalType.FINAL_15,
+    SignalType.GAP_ALERT, SignalType.PIN_FORECAST, SignalType.MORNING_READ,
+    SignalType.GEX_TREND, SignalType.MORNING_BRIEF, SignalType.HOURLY_RECAP,
+    SignalType.RTH_PULSE, SignalType.QUIET_SUMMARY,
+}
+SYSTEM_SIGNALS = {SignalType.DATA_LAG, SignalType.DATA_RESTORED}
+
+TELEGRAM_ELIGIBLE = TRADE_SIGNALS | RELAY_SIGNALS | COMMENTARY_SIGNALS | SYSTEM_SIGNALS
 
 
 class TelegramCooldownManager:
@@ -139,6 +140,16 @@ class TelegramAlertSender:
             log.warning("Telegram alerts enabled but TELEGRAM_BOT_TOKEN not set.")
             self._enabled = False
 
+        # Backward-compat: old channel names -> new 4-channel layout
+        self._channel_compat = {
+            "gex_ops": "gex_trades",
+            "market_pulse": "gex_engine",
+            "daily_intel": "gex_context",
+            "intraday_fast": "gex_engine",
+            "trading_summary": "gex_trades",
+            "consensus": "gex_relay",
+        }
+
         if self._enabled:
             log.info(
                 "Telegram alerts initialized. Channels: %s",
@@ -146,6 +157,15 @@ class TelegramAlertSender:
             )
         else:
             log.info("Telegram alerts disabled.")
+
+    def _resolve_chat_id(self, channel: str) -> Optional[str]:
+        """Resolve a channel name to a Telegram chat ID, with backward-compat fallback."""
+        chat_id = self._channels.get(channel)
+        if not chat_id:
+            fallback = self._channel_compat.get(channel)
+            if fallback:
+                chat_id = self._channels.get(fallback)
+        return chat_id
 
     @property
     def cooldown(self) -> TelegramCooldownManager:
@@ -169,40 +189,8 @@ class TelegramAlertSender:
             return False
         if signal.signal_type not in TELEGRAM_ELIGIBLE:
             return False
-        if signal.signal_type == SignalType.BOUNCE_ZONE:
-            urgency = signal.metadata.get("urgency")
-            gamma_bn = signal.metadata.get("gamma_bn")
-            # CONTACT (<5 pts) = wall already breaking, not actionable
-            if urgency == "CONTACT":
-                return False
-            # Positive gamma = chop zone, walls are noise
-            if gamma_bn is not None and gamma_bn > 0:
-                return False
-        if signal.signal_type == SignalType.GAMMA_SNAP:
-            tier = signal.metadata.get("tier", 99)
-            side = signal.metadata.get("side")
-            # Swing signals always go to Telegram
-            if side == "SWING":
-                return True
-            # Butterfly pin signals always go to Telegram
-            if side == "BUTTERFLY":
-                return True
-            if side == "LONG":
-                # T1 (63%/+25.3), L1 (67%/+23.3), B1 (82%/+16.1) -> Telegram
-                # T2 (47%/+4.8), T3 (39%/+3.2), T4 (22%/-2.1) -> Discord only
-                if tier not in (1, 5, 6):  # T1=1, L1=5, B1=6
-                    return False
-                # T1 when RSI<40 = 30% win, -10.5 net — actively harmful
-                if tier == 1:
-                    rsi = _get_daily_rsi()
-                    if rsi is not None and rsi < 40:
-                        log.info(f"Telegram: suppressing T1 LONG — RSI={rsi:.0f} < 40")
-                        return False
-            if side == "SHORT":
-                # S2 (100% reversal), S3 (68%/+9.0), BEAR (80%/+28.9) -> Telegram
-                # S1 Discord only (67% win but only +1.1 net)
-                if tier not in (2, 3, 7):  # S2=2, S3=3, BEAR=7
-                    return False
+        # PHASE 1: No filters — send everything to Telegram
+        # User will observe for 1 week and prune useless signal types
         return True
 
     def send_signal(self, signal: Signal) -> bool:
@@ -211,6 +199,21 @@ class TelegramAlertSender:
             return False
 
         signal_name = signal.signal_type.name.lower()
+        # MA_SNAP uses side-level cooldowns (LONG/SHORT)
+        # Each MA fires once per day (built into signal_interpreter), cooldown is backup
+        if signal.signal_type == SignalType.MA_SNAP:
+            sub_key = signal.metadata.get("side", "")
+            if not self._cooldown.can_fire(signal_name, sub_key):
+                log.debug(f"Telegram: {signal_name}:{sub_key} on cooldown, skipping.")
+                return False
+            chat_id = self._resolve_chat_id(signal.channel)
+            if not chat_id:
+                log.warning(f"No Telegram channel mapped for '{signal.channel}'")
+                return False
+            success = self._send_message(chat_id, signal)
+            if success:
+                self._cooldown.mark_fired(signal_name, sub_key)
+            return success
         # GAMMA_SNAP uses tier-level cooldowns so T1 can alert more often
         # Late session (after 11:30 PT) gets even shorter cooldown — 0DTE gamma is extreme
         sub_key = ""
@@ -228,14 +231,10 @@ class TelegramAlertSender:
             return False
 
         # Map GEX channel name to Telegram chat ID
-        chat_id = self._channels.get(signal.channel)
+        chat_id = self._resolve_chat_id(signal.channel)
         if not chat_id:
-            # Fallback: intraday_fast -> gex_ops channel
-            if signal.channel == "intraday_fast":
-                chat_id = self._channels.get("gex_ops")
-            if not chat_id:
-                log.warning(f"No Telegram channel mapped for '{signal.channel}'")
-                return False
+            log.warning(f"No Telegram channel mapped for '{signal.channel}'")
+            return False
 
         success = self._send_message(chat_id, signal)
         if success:
@@ -287,6 +286,16 @@ class TelegramAlertSender:
                     if attempt < len(backoff):
                         time_mod.sleep(retry_after)
                         continue
+                    return False
+                elif resp.status_code in (500, 502, 503):
+                    log.warning(
+                        f"Telegram 5xx error: {resp.status_code} "
+                        f"(attempt {attempt + 1}/{len(backoff) + 1})"
+                    )
+                    if attempt < len(backoff):
+                        time_mod.sleep(backoff[attempt])
+                        continue
+                    log.error(f"Telegram API failed after retries: {resp.status_code}")
                     return False
                 else:
                     log.error(f"Telegram API error: {resp.status_code} {resp.text}")

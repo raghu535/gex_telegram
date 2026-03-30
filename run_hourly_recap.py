@@ -39,7 +39,7 @@ def main():
         signal_type=SignalType.HOURLY_RECAP,
         title="Hourly Recap",
         message=msg,
-        channel="daily_intel",
+        channel="gex_engine",
         priority=SignalType.HOURLY_RECAP,
     )
 

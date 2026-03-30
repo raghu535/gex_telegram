@@ -1,0 +1,52 @@
+[
+  {
+    "combo": "C1",
+    "trades": 23,
+    "win_pct": 43.5,
+    "avg_pnl": -3.3,
+    "total_pnl": -74.8,
+    "sharpe": -0.098,
+    "best": 75.8,
+    "worst": -71.3
+  },
+  {
+    "combo": "C2",
+    "trades": 9,
+    "win_pct": 33.3,
+    "avg_pnl": -8.4,
+    "total_pnl": -75.3,
+    "sharpe": -0.546,
+    "best": 11.4,
+    "worst": -32.3
+  },
+  {
+    "combo": "C3",
+    "trades": 1,
+    "win_pct": 0.0,
+    "avg_pnl": -5.2,
+    "total_pnl": -5.2,
+    "sharpe": 0,
+    "best": -5.2,
+    "worst": -5.2
+  },
+  {
+    "combo": "C4",
+    "trades": 18,
+    "win_pct": 50.0,
+    "avg_pnl": 5.4,
+    "total_pnl": 96.3,
+    "sharpe": 0.21,
+    "best": 66.4,
+    "worst": -18.2
+  },
+  {
+    "combo": "C5",
+    "trades": 7,
+    "win_pct": 42.9,
+    "avg_pnl": 1.6,
+    "total_pnl": 11.5,
+    "sharpe": 0.175,
+    "best": 20.0,
+    "worst": -14.7
+  }
+]

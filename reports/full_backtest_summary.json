@@ -1,0 +1,115 @@
+{
+  "data_scope": {
+    "db_path": "gex_data.db",
+    "session_tag": "RTH",
+    "date_min": "2025-08-22",
+    "date_max": "2026-02-19",
+    "days_in_features": 127,
+    "days_classified": 102
+  },
+  "outputs": {
+    "daily_features_full_csv": "reports\\daily_features_full.csv",
+    "group_outcomes_csv": "reports\\group_outcomes.csv",
+    "remaining_move_table_csv": "reports\\remaining_move_table.csv",
+    "strategy_trades_csv": "reports\\strategy_trades.csv",
+    "strategy_equity_curve_csv": "reports\\strategy_equity_curve.csv",
+    "full_backtest_summary_json": "reports\\full_backtest_summary.json"
+  },
+  "strategy": {
+    "risk_per_trade_dollars": 500.0,
+    "days_traded": 21,
+    "days_skipped": 81,
+    "overall_win_rate_pct": 80.95238095238095,
+    "total_pnl_dollars": 6500.0,
+    "daily_mean_pnl_dollars": 63.72549019607843,
+    "daily_std_pnl_dollars": 217.73757171090986,
+    "sharpe_daily_mean_over_std": 0.29267107966413236,
+    "max_drawdown_dollars": 1000.0,
+    "max_consecutive_losses": 2,
+    "best_trade": {
+      "date": "2025-12-08",
+      "group": "C",
+      "subgroup": "C2",
+      "trade_type": "C2_IRON_CONDOR",
+      "side": "NEUTRAL",
+      "entry_time": "07:00:31",
+      "exit_time": "12:59:38",
+      "entry_price": 6866.15,
+      "exit_price": 6843.85,
+      "target_price": 6871.47,
+      "stop_price": NaN,
+      "reason": "inside_condor",
+      "pnl_units": 1.0,
+      "pnl_dollars": 500.0,
+      "win": 1,
+      "month": "2025-12"
+    },
+    "worst_trade": {
+      "date": "2025-12-11",
+      "group": "A",
+      "subgroup": "A1",
+      "trade_type": "A1_CONTINUATION",
+      "side": "SHORT",
+      "entry_time": "06:59:59",
+      "exit_time": "07:06:10",
+      "entry_price": 6838.18,
+      "exit_price": 6849.14,
+      "target_price": 6816.88227940526,
+      "stop_price": 6849.120000000001,
+      "reason": "stop",
+      "pnl_units": -1.0,
+      "pnl_dollars": -500.0,
+      "win": 0,
+      "month": "2025-12"
+    },
+    "group_performance": {
+      "A1": {
+        "trades": 4,
+        "win_rate_pct": 75.0,
+        "avg_pnl_dollars": 250.0,
+        "total_pnl_dollars": 1000.0
+      },
+      "A2": {
+        "trades": 1,
+        "win_rate_pct": 0.0,
+        "avg_pnl_dollars": -500.0,
+        "total_pnl_dollars": -500.0
+      },
+      "C1": {
+        "trades": 3,
+        "win_rate_pct": 66.66666666666666,
+        "avg_pnl_dollars": 166.66666666666666,
+        "total_pnl_dollars": 500.0
+      },
+      "C2": {
+        "trades": 13,
+        "win_rate_pct": 92.3076923076923,
+        "avg_pnl_dollars": 423.0769230769231,
+        "total_pnl_dollars": 5500.0
+      }
+    },
+    "monthly_breakdown": [
+      {
+        "month": "2025-12",
+        "trades": 6,
+        "win_rate_pct": 66.66666666666666,
+        "pnl_dollars": 1000.0,
+        "avg_pnl_dollars": 166.66666666666666
+      },
+      {
+        "month": "2026-01",
+        "trades": 9,
+        "win_rate_pct": 77.77777777777779,
+        "pnl_dollars": 2500.0,
+        "avg_pnl_dollars": 277.77777777777777
+      },
+      {
+        "month": "2026-02",
+        "trades": 6,
+        "win_rate_pct": 100.0,
+        "pnl_dollars": 3000.0,
+        "avg_pnl_dollars": 500.0
+      }
+    ]
+  }
+}

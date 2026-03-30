@@ -168,9 +168,9 @@ def _extract_timestamp_pt(text: str, envelope_dt: Optional[datetime] = None) -> 
     iso_match = RE_ISO_TIMESTAMP.search(text)
     if iso_match:
         try:
-            dt_utc = datetime.strptime(iso_match.group(1).strip(), "%Y-%m-%d %H:%M:%S")
-            dt_utc = pytz.utc.localize(dt_utc)
-            return dt_utc.astimezone(PT_TZ)
+            dt_raw = datetime.strptime(iso_match.group(1).strip(), "%Y-%m-%d %H:%M:%S")
+            dt_riyadh = pytz.timezone("Asia/Riyadh").localize(dt_raw)  # SpotGamma timestamps are Riyadh (UTC+3)
+            return dt_riyadh.astimezone(PT_TZ)
         except ValueError:
             pass
 
@@ -272,9 +272,18 @@ def parse_message(text: str, envelope_dt: Optional[datetime] = None) -> Optional
     top5_calls.sort(key=lambda x: x[1], reverse=True)
     top5_puts.sort(key=lambda x: x[1])
 
-    # Derive walls
-    call_wall = top5_calls[0][0] if top5_calls else 0
-    put_floor = top5_puts[0][0] if top5_puts else 0
+    # Derive walls: highest-gamma strike ABOVE price (call wall), BELOW price (put floor)
+    # These are the levels where dealer hedging creates resistance/support
+    calls_above = [(s, g) for s, g in top5_calls if s > curr_price]
+    puts_below = [(s, g) for s, g in top5_puts if s < curr_price]
+    if calls_above:
+        call_wall = max(calls_above, key=lambda x: x[1])[0]  # highest gamma above price
+    else:
+        call_wall = top5_calls[0][0] if top5_calls else 0  # fallback: top gamma overall
+    if puts_below:
+        put_floor = min(puts_below, key=lambda x: x[1])[0]  # most negative gamma below price
+    else:
+        put_floor = top5_puts[0][0] if top5_puts else 0  # fallback: top gamma overall
 
     # Trim to top 5
     top5_calls = top5_calls[:5]

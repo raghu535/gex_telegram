@@ -1,0 +1,357 @@
+{
+  "analysis_1": {
+    "total_days": 127,
+    "counts": {
+      "day_range_gt_100": 13,
+      "day_range_gt_50": 62,
+      "day_range_gt_30": 99,
+      "max_2hr_move_gt_50": 54,
+      "max_2hr_move_gt_30": 93,
+      "max_1hr_move_gt_20": 108,
+      "last_30min_move_gt_15": 14,
+      "last_hour_move_gt_20": 17
+    },
+    "hour_bucket_distribution": {
+      "12:00-2:00": 51,
+      "9:30-10:30": 38,
+      "10:30-12:00": 21,
+      "2:00-3:00": 15,
+      "NaN": 2
+    },
+    "summary_line": "On 48.8% of days there is a 50+ pt move somewhere in the day. On 73.2% there is a 30+ pt 2-hour move. On 13.4% the last hour moves 20+ pts."
+  },
+  "analysis_2": {
+    "group_stats": {
+      "BIG": {
+        "count": 62,
+        "morning_state": {
+          "avg_open_gamma_bn": 1.180455336919355,
+          "avg_vix": 18.190161397380212,
+          "avg_open_spread": 28402.09677419355,
+          "avg_overnight_gap": -3.9685483870967038,
+          "avg_prior_day_range": 68.89693548387099,
+          "avg_prior_day_eod_gamma_bn": -3.0181510752580647
+        },
+        "prior_day_state": {
+          "avg_prior_eod_gamma_bn": -3.0181510752580647,
+          "avg_prior_day_range": 68.89693548387099,
+          "avg_prior_day_close_em_pos": -0.208031889013079,
+          "prior_day_compressed_rate": 0.20967741935483872
+        }
+      },
+      "MEDIUM": {
+        "count": 37,
+        "morning_state": {
+          "avg_open_gamma_bn": 2.7959743042972973,
+          "avg_vix": 16.36351355990848,
+          "avg_open_spread": 16630.27027027027,
+          "avg_overnight_gap": 8.939722222222144,
+          "avg_prior_day_range": 44.96111111111112,
+          "avg_prior_day_eod_gamma_bn": 5.691243270333333
+        },
+        "prior_day_state": {
+          "avg_prior_eod_gamma_bn": 5.691243270333333,
+          "avg_prior_day_range": 44.96111111111112,
+          "avg_prior_day_close_em_pos": 0.2757945291490046,
+          "prior_day_compressed_rate": 0.2972972972972973
+        }
+      },
+      "SMALL": {
+        "count": 28,
+        "morning_state": {
+          "avg_open_gamma_bn": 4.431583622571428,
+          "avg_vix": 15.940714393343244,
+          "avg_open_spread": 19116.785714285714,
+          "avg_overnight_gap": 0.8346428571428532,
+          "avg_prior_day_range": 43.97499999999997,
+          "avg_prior_day_eod_gamma_bn": 9.216517047857144
+        },
+        "prior_day_state": {
+          "avg_prior_eod_gamma_bn": 9.216517047857144,
+          "avg_prior_day_range": 43.97499999999997,
+          "avg_prior_day_close_em_pos": 0.34590252120230697,
+          "prior_day_compressed_rate": 0.32142857142857145
+        }
+      }
+    },
+    "night_before_predictors": {
+      "prior_eod_gamma_lt_neg5bn": {
+        "instances": 20,
+        "hit_rate": 0.75
+      },
+      "prior_day_compressed": {
+        "instances": 33,
+        "hit_rate": 0.3939393939393939
+      },
+      "vix_prev_close_gt_20": {
+        "instances": 19,
+        "hit_rate": 0.8421052631578947
+      },
+      "prior_eod_gamma_lt_neg5bn_and_compressed": {
+        "instances": 3,
+        "hit_rate": 1.0
+      }
+    },
+    "ten_am_predictors": {
+      "first30_ratio_gt_0p3": {
+        "instances": 29,
+        "hit_rate": 0.6551724137931034
+      },
+      "first30_ratio_gt_0p3_and_open_gamma_lt_neg3bn": {
+        "instances": 12,
+        "hit_rate": 0.75
+      },
+      "first30_swept_prior_high_or_low": {
+        "instances": 58,
+        "hit_rate": 0.41379310344827586
+      }
+    }
+  },
+  "summary_table": {
+    "Swing A": {
+      "trades": 124,
+      "win_pct": 4.838709677419355,
+      "avg_return_pct": -40.87609405503248,
+      "total_pnl_contract": -2860.3173307633438,
+      "best_trade": {
+        "date": "2026-01-20",
+        "pnl": 75.14644379153302
+      },
+      "worst_trade": {
+        "date": "2025-11-19",
+        "pnl": -66.82288832787526
+      },
+      "sharpe_like": -0.8186818832288395
+    },
+    "Swing B": {
+      "trades": 19,
+      "win_pct": 31.57894736842105,
+      "avg_return_pct": -29.470888529876948,
+      "total_pnl_contract": -142.12202191726962,
+      "best_trade": {
+        "date": "2026-02-06",
+        "pnl": 74.45740717172649
+      },
+      "worst_trade": {
+        "date": "2026-02-13",
+        "pnl": -35.658309377326965
+      },
+      "sharpe_like": -0.22745389055383047
+    },
+    "Swing C": {
+      "trades": 19,
+      "win_pct": 21.052631578947366,
+      "avg_return_pct": -30.50833671610497,
+      "total_pnl_contract": -183.46202191726977,
+      "best_trade": {
+        "date": "2026-01-20",
+        "pnl": 102.66822189576676
+      },
+      "worst_trade": {
+        "date": "2026-02-06",
+        "pnl": -37.012592828273775
+      },
+      "sharpe_like": -0.2773281495967249
+    },
+    "Swing D": {
+      "trades": 31,
+      "win_pct": 3.225806451612903,
+      "avg_return_pct": -55.28301004144476,
+      "total_pnl_contract": -929.9828416376675,
+      "best_trade": {
+        "date": "2025-11-13",
+        "pnl": 13.272917615355716
+      },
+      "worst_trade": {
+        "date": "2025-11-12",
+        "pnl": -57.900971948461724
+      },
+      "sharpe_like": -1.6115152540138311
+    },
+    "Swing E": {
+      "trades": 124,
+      "win_pct": 28.225806451612907,
+      "avg_return_pct": -36.52836229823726,
+      "total_pnl_contract": -1265.4786653816711,
+      "best_trade": {
+        "date": "2026-01-20",
+        "pnl": 102.66822189576676
+      },
+      "worst_trade": {
+        "date": "2026-02-06",
+        "pnl": -37.012592828273775
+      },
+      "sharpe_like": -0.3958528147338771
+    },
+    "Momentum 15pt": {
+      "trades": 963,
+      "win_pct": 22.326064382139148,
+      "avg_return_pct": 160.14559536171708,
+      "total_pnl_contract": 5791.475000000009,
+      "best_trade": {
+        "date": "2025-11-20",
+        "pnl": 263.9249999999993
+      },
+      "worst_trade": {
+        "date": "2025-11-24",
+        "pnl": -4.8
+      },
+      "sharpe_like": 0.2412990962230544
+    },
+    "Last 30min": {
+      "trades": 123,
+      "win_pct": 49.59349593495935,
+      "avg_return_pct": 1032.6502408250246,
+      "total_pnl_contract": 1537.2127252268635,
+      "best_trade": {
+        "date": "2026-01-29",
+        "pnl": 109.15999999999985
+      },
+      "worst_trade": {
+        "date": "2025-09-02",
+        "pnl": -1.4991380800835188
+      },
+      "sharpe_like": 0.5885806405943694
+    }
+  },
+  "momentum": {
+    "moonshot_3_to_50_count": 51,
+    "loser_3_to_1_count": 34,
+    "split_stats": {
+      "gamma_regime": [
+        {
+          "gamma_regime": "neg",
+          "trades": 414,
+          "win_pct": 13.768115942028986,
+          "avg_pnl": 2.0257246376811637,
+          "avg_return_pct": 45.66737117552361,
+          "cont15": 0.34299516908212563,
+          "cont30": 0.1111111111111111
+        },
+        {
+          "gamma_regime": "neutral",
+          "trades": 397,
+          "win_pct": 33.75314861460957,
+          "avg_pnl": 11.85226700251889,
+          "avg_return_pct": 323.43975650713674,
+          "cont15": 0.3904282115869018,
+          "cont30": 0.12090680100755667
+        },
+        {
+          "gamma_regime": "pos",
+          "trades": 152,
+          "win_pct": 15.789473684210526,
+          "avg_pnl": 1.6281250000000453,
+          "avg_return_pct": 45.449561403509826,
+          "cont15": 0.19078947368421054,
+          "cont30": 0.02631578947368421
+        }
+      ],
+      "time_bucket": [
+        {
+          "time_bucket": "afternoon",
+          "trades": 232,
+          "win_pct": 21.551724137931032,
+          "avg_pnl": 7.492672413793114,
+          "avg_return_pct": 249.75574712643714,
+          "cont15": 0.3793103448275862,
+          "cont30": 0.09051724137931035
+        },
+        {
+          "time_bucket": "midday",
+          "trades": 509,
+          "win_pct": 23.772102161100197,
+          "avg_pnl": 5.977750491159146,
+          "avg_return_pct": 149.44376227897865,
+          "cont15": 0.32612966601178783,
+          "cont30": 0.08644400785854617
+        },
+        {
+          "time_bucket": "morning",
+          "trades": 222,
+          "win_pct": 19.81981981981982,
+          "avg_pnl": 4.551801801801805,
+          "avg_return_pct": 91.03603603603608,
+          "cont15": 0.32432432432432434,
+          "cont30": 0.14864864864864866
+        }
+      ],
+      "with_trend": [
+        {
+          "with_trend": 0,
+          "trades": 240,
+          "win_pct": 26.25,
+          "avg_pnl": 11.031041666666658,
+          "avg_return_pct": 318.4994791666667,
+          "cont15": 0.475,
+          "cont30": 0.1125
+        },
+        {
+          "with_trend": 1,
+          "trades": 723,
+          "win_pct": 21.023513139695712,
+          "avg_pnl": 4.348582295988949,
+          "avg_return_pct": 107.57999077916122,
+          "cont15": 0.29322268326417705,
+          "cont30": 0.09820193637621023
+        }
+      ],
+      "swept_prior_level_before_trigger": [
+        {
+          "swept_prior_level_before_trigger": 0,
+          "trades": 211,
+          "win_pct": 26.540284360189574,
+          "avg_pnl": 6.043838862559293,
+          "avg_return_pct": 143.98025276461422,
+          "cont15": 0.4075829383886256,
+          "cont30": 0.18009478672985782
+        },
+        {
+          "swept_prior_level_before_trigger": 1,
+          "trades": 752,
+          "win_pct": 21.143617021276594,
+          "avg_pnl": 6.005618351063827,
+          "avg_return_pct": 164.6813497340425,
+          "cont15": 0.3191489361702128,
+          "cont30": 0.0797872340425532
+        }
+      ]
+    }
+  },
+  "last_30min": {
+    "overall_continuation_rate": 0.4959349593495935,
+    "avg_last30_move": -0.9656097560975572,
+    "split_by_gamma": [
+      {
+        "gamma_regime": "neg",
+        "trades": 23,
+        "continuation_rate": 0.391304347826087,
+        "avg_last30_move": -1.2860869565216568,
+        "avg_pnl": 15.776353284856512,
+        "win_pct": 39.130434782608695
+      },
+      {
+        "gamma_regime": "neutral",
+        "trades": 77,
+        "continuation_rate": 0.5064935064935064,
+        "avg_last30_move": -1.3783116883117015,
+        "avg_pnl": 12.2888533869361,
+        "win_pct": 50.649350649350644
+      },
+      {
+        "gamma_regime": "pos",
+        "trades": 23,
+        "continuation_rate": 0.5652173913043478,
+        "avg_last30_move": 0.7365217391304174,
+        "avg_pnl": 9.918038647003653,
+        "win_pct": 56.52173913043478
+      }
+    ]
+  },
+  "best_risk_adjusted_setup": "Last 30min",
+  "best_place_and_walk_setup": "Swing B",
+  "notes": {
+    "option_pricing_model": "Synthetic heuristic model based on underlying move and time-to-close; not real option marks.",
+    "data_scope": "RTH snapshots only from gex_snapshots + VIX from yfinance."
+  }
+}

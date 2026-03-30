@@ -94,8 +94,13 @@ def compute_long(snapshot: GEXSnapshot, now_pt: Optional[datetime] = None) -> Tr
     reward = abs(target - entry_high)
     rr = reward / risk if risk > 0 else 0
 
-    valid = rr >= 1.5
-    reason = "" if valid else f"R:R {rr:.1f}:1 below 1.5:1 minimum"
+    valid = rr >= 1.5 and target > entry_high
+    if target <= entry_high:
+        reason = f"Target {target:.0f} not above entry {entry_high:.0f}"
+    elif not valid:
+        reason = f"R:R {rr:.1f}:1 below 1.5:1 minimum"
+    else:
+        reason = ""
 
     return TradeLevels(
         setup_type=SetupType.LONG,
@@ -125,8 +130,13 @@ def compute_short(snapshot: GEXSnapshot, now_pt: Optional[datetime] = None) -> T
     reward = abs(entry_low - target)
     rr = reward / risk if risk > 0 else 0
 
-    valid = rr >= 1.5
-    reason = "" if valid else f"R:R {rr:.1f}:1 below 1.5:1 minimum"
+    valid = rr >= 1.5 and target < entry_low
+    if target >= entry_low:
+        reason = f"Target {target:.0f} not below entry {entry_low:.0f}"
+    elif not valid:
+        reason = f"R:R {rr:.1f}:1 below 1.5:1 minimum"
+    else:
+        reason = ""
 
     return TradeLevels(
         setup_type=SetupType.SHORT,
@@ -192,6 +202,10 @@ def compute_levels_for_regime(
 
     if snapshot.call_wall == 0 or snapshot.put_floor == 0:
         return result
+
+    spread = snapshot.call_wall - snapshot.put_floor
+    if spread < 20:
+        return result  # Zero or tiny spread = bad data, no valid levels
 
     result["long"] = compute_long(snapshot, now_pt)
     result["short"] = compute_short(snapshot, now_pt)

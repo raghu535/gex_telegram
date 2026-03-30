@@ -1,0 +1,63 @@
+Engine Tuning Summary - 2026-02-12
+
+What changed this session
+1. Added/kept day-profile classifier and tuned thresholds to catch risk-off days earlier (open_negative_bn -4.0, early_crash_bn -9.0).
+2. Trend dashboard emission is state-change-first (plus constrained heartbeat), reducing repetitive same-bias chatter.
+3. Added 06:35 AM PT Morning Checklist signal to market_pulse with day profile, bias line, and key levels.
+4. Added move-from-open counter-trend gating with score requirements and hard suppression beyond configured move.
+5. Added trend min emit score filter (min_emit_score=6), first-of-day exempt.
+6. Set alerts.mode to full for live routing with filters active.
+
+Before/after alert counts (RTH TREND_DASHBOARD, cooldown-aware replay)
+Day | Close dPx | Original alerts (pre-tuning baseline) | Final alerts | Final Bull/Bear
+2026-02-04 | -40.71 | 51 | 4 | 2/2
+2026-02-05 | -82.06 | 58 | 2 | 0/2
+2026-02-06 | +105.27 | 50 | 3 | 2/1
+2026-02-09 | +35.62 | 45 | 5 | 2/3
+2026-02-10 | +10.09 | 40 | 6 | 2/4
+2026-02-11 | +6.41 | 50 | 11 | 5/6
+2026-02-12 | -90.69 | 68 | 7 | 2/5
+
+Current config values
+day_profile:
+  compute_interval_seconds: 60
+  open_negative_bn: -4.0
+  early_crash_bn: -9.0
+  open_positive_bn: 5.0
+  early_not_too_negative_bn: -5.0
+counter_trend_gates:
+  gates:
+    - move_pts: 20
+      min_score: 6
+    - move_pts: 40
+      min_score: 7
+    - move_pts: 60
+      min_score: 8
+  suppress_all_pts: 60
+trend.min_emit_score: 6
+alerts.mode: full
+
+Known limitations
+1. Does not provide exact entry price, exact turn timestamp, or guaranteed target level.
+2. Still probabilistic: choppy sessions can produce alternating valid signals.
+3. Trend score quality depends on upstream snapshot integrity/timing.
+
+What engine is good at
+1. Day classification and directional bias framing.
+2. Highlighting key structural levels (call wall / put floor).
+3. Filtering low-conviction/counter-trend noise.
+4. Providing risk-sizing context and avoiding low-quality trades.
+
+Next steps for live
+1. alerts.mode is full; start live from next trading day.
+2. Track daily scorecard for 10 sessions: morning checklist bias vs close direction, total trend alerts, false flips.
+3. If day-direction accuracy is >=65%, keep settings; else revisit thresholds.
+
+All files modified this session
+1. config.yaml - added min_emit_score and counter_trend_gates; set alerts.mode to full; retained day_profile tuning and morning_checklist schedule.
+2. signal_interpreter.py - added min_emit_score emission filter and move-from-open counter-trend score gating (trend dashboard only).
+3. telegram_listener.py - tracked RTH open price and attached it to trend context for interpreter gating.
+4. trend_engine.py - added open_price field to TrendDashboard dataclass.
+5. reports/engine_tuning_summary_2026-02-12.txt - this wrap-up summary.
+
+min_emit_score=7 comparison not required (Feb 11 <= 15 under min_emit_score=6).

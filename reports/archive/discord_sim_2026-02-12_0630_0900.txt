@@ -1,0 +1,875 @@
+Simulated Discord messages for 2026-02-12 (RTH 06:30-09:00 PT)
+Total fired: 65
+
+[06:31:20 AM PT] [gex_ops] [STRIKE_FLIP] Strike Flip: 6950
+Price: 6,941.47 | NetGamma: -4.33Bn | Wall: 7000 | Floor: 6950
+**STRIKE FLIP DETECTED**
+Strike 6950: Put gamma (-2,915,619,007) overtaking Call gamma (589,916,783)
+  Put/Call ratio: 4.94
+
+This strike has flipped from support to resistance. Watch for breakdown.
+------------------------------------------------------------------------------------------
+[06:31:20 AM PT] [market_pulse] [TREND_DASHBOARD] Trend Dashboard - BEARISH
+Price: 6,941.47 | NetGamma: -4.33Bn | Wall: 7000 | Floor: 6950
+**TREND DASHBOARD - BEARISH HEARTBEAT**
+Score: 5 | Price: 6941 | Net Gamma: -4.33 Bn
+Call Wall: 7000 | Put Floor: 6950 | Spread: 50 pts
+
+5m NEUTRAL | dPx +0 | dG -3.02 Bn
+15m NEUTRAL | dPx +0 | dG -3.02 Bn
+30m NEUTRAL | dPx +0 | dG -3.06 Bn
+60m NEUTRAL | dPx +0 | dG -3.17 Bn
+
+Support targets: 6940 (-1.66Bn), 6930 (-0.83Bn), 6900 (-0.84Bn)
+Resistance targets: 6950 (+0.59Bn), 6975 (+0.62Bn), 6980 (+0.57Bn)
+
+Notes:
+- 15m gamma decay -3.02 Bn
+- 30m gamma decay -3.06 Bn
+- 60m gamma decay -3.17 Bn
+- Call wall strengthening: +121% at 7000
+- Put floor building: +177% at 6950
+- Price pressing put floor (-9 pts)
+------------------------------------------------------------------------------------------
+[06:37:01 AM PT] [market_pulse] [TREND_DASHBOARD] Trend Dashboard - BEARISH
+Price: 6,941.47 | NetGamma: -4.45Bn | Wall: 7000 | Floor: 6950
+**TREND DASHBOARD - BEARISH HEARTBEAT**
+Score: 5 | Price: 6941 | Net Gamma: -4.45 Bn
+Call Wall: 7000 | Put Floor: 6950 | Spread: 50 pts
+
+5m NEUTRAL | dPx +0 | dG -0.41 Bn
+15m NEUTRAL | dPx +0 | dG -3.09 Bn
+30m NEUTRAL | dPx +0 | dG -3.09 Bn
+60m NEUTRAL | dPx +0 | dG -3.43 Bn
+
+Support targets: 6940 (-1.52Bn), 6900 (-0.84Bn), 6945 (-1.13Bn)
+Resistance targets: 6950 (+0.62Bn), 6975 (+0.64Bn), 6980 (+0.59Bn)
+
+Notes:
+- 15m gamma decay -3.09 Bn
+- 30m gamma decay -3.09 Bn
+- 60m gamma decay -3.43 Bn
+- Call wall strengthening: +121% at 7000
+- Put floor building: +158% at 6950
+- Price pressing put floor (-9 pts)
+------------------------------------------------------------------------------------------
+[06:42:57 AM PT] [market_pulse] [TREND_DASHBOARD] Trend Dashboard - BEARISH
+Price: 6,941.47 | NetGamma: -4.30Bn | Wall: 7000 | Floor: 6950
+**TREND DASHBOARD - BEARISH HEARTBEAT**
+Score: 5 | Price: 6941 | Net Gamma: -4.30 Bn
+Call Wall: 7000 | Put Floor: 6950 | Spread: 50 pts
+
+5m NEUTRAL | dPx +0 | dG +0.15 Bn
+15m NEUTRAL | dPx +0 | dG -2.86 Bn
+30m NEUTRAL | dPx +0 | dG -2.92 Bn
+60m NEUTRAL | dPx +0 | dG -3.19 Bn
+
+Support targets: 6940 (-1.45Bn), 6900 (-0.84Bn), 6945 (-1.05Bn)
+Resistance targets: 6950 (+0.63Bn), 6975 (+0.65Bn), 6980 (+0.60Bn)
+
+Notes:
+- 15m gamma decay -2.86 Bn
+- 30m gamma decay -2.92 Bn
+- 60m gamma decay -3.19 Bn
+- Call wall strengthening: +115% at 7000
+- Put floor building: +130% at 6950
+- Price pressing put floor (-9 pts)
+------------------------------------------------------------------------------------------
+[06:47:25 AM PT] [gex_ops] [STRIKE_FLIP] Strike Flip: 6950
+Price: 6,941.47 | NetGamma: -4.36Bn | Wall: 7000 | Floor: 6950
+**STRIKE FLIP DETECTED**
+Strike 6950: Put gamma (-2,390,056,783) overtaking Call gamma (634,438,804)
+  Put/Call ratio: 3.77
+
+This strike has flipped from support to resistance. Watch for breakdown.
+------------------------------------------------------------------------------------------
+[06:48:37 AM PT] [market_pulse] [TREND_DASHBOARD] Trend Dashboard - BULLISH
+Price: 6,955.42 | NetGamma: +1.93Bn | Wall: 7000 | Floor: 6950
+**TREND DASHBOARD - BULLISH TREND**
+Score: 7 | Price: 6955 | Net Gamma: +1.93 Bn
+Call Wall: 7000 | Put Floor: 6950 | Spread: 50 pts
+
+5m BULL | dPx +14 | dG +6.22 Bn
+15m BULL | dPx +14 | dG +5.80 Bn
+30m NEUTRAL | dPx +14 | dG +3.28 Bn
+60m NEUTRAL | dPx +14 | dG +2.98 Bn
+
+Support targets: 6955 (-0.64Bn), 6950 (-1.26Bn), 6945 (-0.59Bn)
+Resistance targets: 6975 (+1.06Bn), 6980 (+0.92Bn), 6985 (+0.89Bn)
+
+Notes:
+- 30m gamma build +3.28 Bn
+- 60m gamma build +2.98 Bn
+- Call wall strengthening: +163% at 7000
+- Pivot pressure: 6950 ratio 1.15
+- Price pressing put floor (5 pts)
+------------------------------------------------------------------------------------------
+[06:50:10 AM PT] [gex_ops] [GAMMA_COMPRESSION] Gamma Compression
+Price: 6,952.19 | NetGamma: +1.10Bn | Wall: 6950 | Floor: 6950
+**GAMMA COMPRESSION**
+Walls converging: spread narrowed 100%
+Call Wall: 7000 -> 6950
+Put Floor: 6950 -> 6950
+Spread: 50 -> 0 pts
+
+Compressed range often precedes expansion. Breakout imminent.
+------------------------------------------------------------------------------------------
+[06:53:22 AM PT] [gex_ops] [STRIKE_FLIP] Strike Flip: 6950
+Price: 6,941.47 | NetGamma: -4.02Bn | Wall: 7000 | Floor: 6950
+**STRIKE FLIP DETECTED**
+Strike 6950: Put gamma (-2,740,431,599) overtaking Call gamma (601,047,288)
+  Put/Call ratio: 4.56
+
+This strike has flipped from support to resistance. Watch for breakdown.
+------------------------------------------------------------------------------------------
+[06:54:36 AM PT] [market_pulse] [TREND_DASHBOARD] Trend Dashboard - BULLISH
+Price: 6,957.22 | NetGamma: +2.44Bn | Wall: 7000 | Floor: 6950
+**TREND DASHBOARD - BULLISH TREND**
+Score: 6 | Price: 6957 | Net Gamma: +2.44 Bn
+Call Wall: 7000 | Put Floor: 6950 | Spread: 50 pts
+
+5m NEUTRAL | dPx +5 | dG +1.34 Bn
+15m BULL | dPx +16 | dG +6.83 Bn
+30m NEUTRAL | dPx +16 | dG +3.81 Bn
+60m NEUTRAL | dPx +16 | dG +3.56 Bn
+
+Support targets: 6955 (-0.68Bn), 6950 (-1.32Bn), 6945 (-0.62Bn)
+Resistance targets: 6975 (+1.14Bn), 6980 (+0.99Bn), 6985 (+0.96Bn)
+
+Notes:
+- 30m gamma build +3.81 Bn
+- 60m gamma build +3.56 Bn
+- Call wall strengthening: +163% at 7000
+- Pivot pressure: 6950 ratio 1.16
+- Price pressing put floor (7 pts)
+------------------------------------------------------------------------------------------
+[06:59:20 AM PT] [gex_ops] [STRIKE_FLIP] Strike Flip: 6950
+Price: 6,941.47 | NetGamma: -4.52Bn | Wall: 7000 | Floor: 6950
+**STRIKE FLIP DETECTED**
+Strike 6950: Put gamma (-2,978,185,938) overtaking Call gamma (589,916,783)
+  Put/Call ratio: 5.05
+
+This strike has flipped from support to resistance. Watch for breakdown.
+------------------------------------------------------------------------------------------
+[07:00:18 AM PT] [gex_ops] [GAMMA_COMPRESSION] Gamma Compression
+Price: 6,944.32 | NetGamma: -1.57Bn | Wall: 6950 | Floor: 6950
+**GAMMA COMPRESSION**
+Walls converging: spread narrowed 100%
+Call Wall: 7000 -> 6950
+Put Floor: 6950 -> 6950
+Spread: 50 -> 0 pts
+
+Compressed range often precedes expansion. Breakout imminent.
+------------------------------------------------------------------------------------------
+[07:00:18 AM PT] [market_pulse] [TREND_DASHBOARD] Trend Dashboard - BEARISH
+Price: 6,944.32 | NetGamma: -1.57Bn | Wall: 6950 | Floor: 6950
+**TREND DASHBOARD - BEARISH SMELL**
+Score: 3 | Price: 6944 | Net Gamma: -1.57 Bn
+Call Wall: 6950 | Put Floor: 6950 | Spread: 0 pts
+
+5m BEAR | dPx -11 | dG -3.13 Bn
+15m NEUTRAL | dPx +3 | dG +2.78 Bn
+30m NEUTRAL | dPx +3 | dG +2.76 Bn
+60m NEUTRAL | dPx +3 | dG -0.30 Bn
+
+Support targets: 6940 (-0.99Bn), 6900 (-0.78Bn), 6945 (-0.66Bn)
+Resistance targets: 6950 (+1.16Bn), 6975 (+0.85Bn), 6980 (+0.68Bn)
+
+Notes:
+- 15m gamma build +2.78 Bn
+- 30m gamma build +2.76 Bn
+- Gamma decay from peak: -164%
+- Call wall shifted: 7000 -> 6950
+- Pivot pressure: 6950 ratio 1.17
+- Price pressing put floor (-6 pts)
+------------------------------------------------------------------------------------------
+[07:05:19 AM PT] [gex_ops] [STRIKE_FLIP] Strike Flip: 6950
+Price: 6,941.47 | NetGamma: -4.48Bn | Wall: 7000 | Floor: 6950
+**STRIKE FLIP DETECTED**
+Strike 6950: Put gamma (-2,477,650,487) overtaking Call gamma (634,438,804)
+  Put/Call ratio: 3.91
+
+This strike has flipped from support to resistance. Watch for breakdown.
+------------------------------------------------------------------------------------------
+[07:05:19 AM PT] [market_pulse] [TREND_DASHBOARD] Trend Dashboard - BEARISH
+Price: 6,941.47 | NetGamma: -4.48Bn | Wall: 7000 | Floor: 6950
+**TREND DASHBOARD - BEARISH SMELL**
+Score: 5 | Price: 6941 | Net Gamma: -4.48 Bn
+Call Wall: 7000 | Put Floor: 6950 | Spread: 50 pts
+
+5m NEUTRAL | dPx +0 | dG -0.27 Bn
+15m NEUTRAL | dPx +0 | dG -0.47 Bn
+30m NEUTRAL | dPx +0 | dG -0.72 Bn
+60m NEUTRAL | dPx +0 | dG -3.21 Bn
+
+Support targets: 6940 (-1.50Bn), 6900 (-0.84Bn), 6945 (-1.09Bn)
+Resistance targets: 6950 (+0.63Bn), 6975 (+0.64Bn), 6980 (+0.59Bn)
+
+Notes:
+- 60m gamma decay -3.21 Bn
+- Gamma decay from peak: -283%
+- Call wall strengthening: +115% at 7000
+- Put floor building: +125% at 6950
+- Price pressing put floor (-9 pts)
+------------------------------------------------------------------------------------------
+[07:10:22 AM PT] [gex_ops] [GAMMA_COMPRESSION] Gamma Compression
+Price: 6,943.25 | NetGamma: -1.90Bn | Wall: 6950 | Floor: 6950
+**GAMMA COMPRESSION**
+Walls converging: spread narrowed 100%
+Call Wall: 7000 -> 6950
+Put Floor: 6950 -> 6950
+Spread: 50 -> 0 pts
+
+Compressed range often precedes expansion. Breakout imminent.
+------------------------------------------------------------------------------------------
+[07:10:22 AM PT] [market_pulse] [TREND_DASHBOARD] Trend Dashboard - BEARISH
+Price: 6,943.25 | NetGamma: -1.90Bn | Wall: 6950 | Floor: 6950
+**TREND DASHBOARD - BEARISH SMELL**
+Score: 3 | Price: 6943 | Net Gamma: -1.90 Bn
+Call Wall: 6950 | Put Floor: 6950 | Spread: 0 pts
+
+5m NEUTRAL | dPx -5 | dG -1.14 Bn
+15m NEUTRAL | dPx -12 | dG -3.47 Bn
+30m NEUTRAL | dPx +2 | dG +2.38 Bn
+60m NEUTRAL | dPx +2 | dG -0.51 Bn
+
+Support targets: 6940 (-1.05Bn), 6900 (-0.79Bn), 6945 (-0.70Bn)
+Resistance targets: 6950 (+1.20Bn), 6975 (+0.83Bn), 6980 (+0.66Bn)
+
+Notes:
+- 15m gamma decay -3.47 Bn
+- 30m gamma build +2.38 Bn
+- Gamma decay from peak: -178%
+- Call wall shifted: 7000 -> 6950
+- Pivot pressure: 6950 ratio 1.20
+- Price pressing put floor (-7 pts)
+------------------------------------------------------------------------------------------
+[07:15:26 AM PT] [gex_ops] [STRIKE_FLIP] Strike Flip: 6950
+Price: 6,941.47 | NetGamma: -4.46Bn | Wall: 7000 | Floor: 6950
+**STRIKE FLIP DETECTED**
+Strike 6950: Put gamma (-2,540,217,418) overtaking Call gamma (623,308,299)
+  Put/Call ratio: 4.08
+
+This strike has flipped from support to resistance. Watch for breakdown.
+------------------------------------------------------------------------------------------
+[07:15:26 AM PT] [market_pulse] [TREND_DASHBOARD] Trend Dashboard - BEARISH
+Price: 6,941.47 | NetGamma: -4.46Bn | Wall: 7000 | Floor: 6950
+**TREND DASHBOARD - BEARISH SMELL**
+Score: 5 | Price: 6941 | Net Gamma: -4.46 Bn
+Call Wall: 7000 | Put Floor: 6950 | Spread: 50 pts
+
+5m NEUTRAL | dPx +0 | dG +0.03 Bn
+15m NEUTRAL | dPx +0 | dG -0.25 Bn
+30m NEUTRAL | dPx +0 | dG -0.11 Bn
+60m NEUTRAL | dPx +0 | dG -3.14 Bn
+
+Support targets: 6940 (-1.52Bn), 6900 (-0.84Bn), 6945 (-1.13Bn)
+Resistance targets: 6950 (+0.62Bn), 6975 (+0.64Bn), 6980 (+0.59Bn)
+
+Notes:
+- 60m gamma decay -3.14 Bn
+- Gamma decay from peak: -282%
+- Call wall strengthening: +115% at 7000
+- Put floor building: +108% at 6950
+- Price pressing put floor (-9 pts)
+------------------------------------------------------------------------------------------
+[07:21:04 AM PT] [gex_ops] [STRIKE_FLIP] Strike Flip: 6950
+Price: 6,941.47 | NetGamma: -4.14Bn | Wall: 7000 | Floor: 6950
+**STRIKE FLIP DETECTED**
+Strike 6950: Put gamma (-2,815,511,917) overtaking Call gamma (612,177,793)
+  Put/Call ratio: 4.60
+
+This strike has flipped from support to resistance. Watch for breakdown.
+------------------------------------------------------------------------------------------
+[07:21:04 AM PT] [market_pulse] [TREND_DASHBOARD] Trend Dashboard - BEARISH
+Price: 6,941.47 | NetGamma: -4.14Bn | Wall: 7000 | Floor: 6950
+**TREND DASHBOARD - BEARISH TREND**
+Score: 7 | Price: 6941 | Net Gamma: -4.14 Bn
+Call Wall: 7000 | Put Floor: 6950 | Spread: 50 pts
+
+5m BEAR | dPx -12 | dG -5.03 Bn
+15m NEUTRAL | dPx +0 | dG +0.32 Bn
+30m NEUTRAL | dPx -15 | dG -6.49 Bn
+60m NEUTRAL | dPx +0 | dG -2.77 Bn
+
+Support targets: 6940 (-1.62Bn), 6930 (-0.82Bn), 6900 (-0.84Bn)
+Resistance targets: 6950 (+0.61Bn), 6975 (+0.63Bn), 6980 (+0.58Bn)
+
+Notes:
+- 30m gamma decay -6.49 Bn
+- 60m gamma decay -2.77 Bn
+- Gamma decay from peak: -270%
+- Call wall strengthening: +115% at 7000
+- Put floor building: +125% at 6950
+- Price pressing put floor (-9 pts)
+------------------------------------------------------------------------------------------
+[07:21:41 AM PT] [gex_ops] [GAMMA_COMPRESSION] Gamma Compression
+Price: 6,946.98 | NetGamma: -0.98Bn | Wall: 6950 | Floor: 6950
+**GAMMA COMPRESSION**
+Walls converging: spread narrowed 100%
+Call Wall: 7000 -> 6950
+Put Floor: 6950 -> 6950
+Spread: 50 -> 0 pts
+
+Compressed range often precedes expansion. Breakout imminent.
+------------------------------------------------------------------------------------------
+[07:27:02 AM PT] [gex_ops] [STRIKE_FLIP] Strike Flip: 6950
+Price: 6,941.47 | NetGamma: -4.05Bn | Wall: 7000 | Floor: 6950
+**STRIKE FLIP DETECTED**
+Strike 6950: Put gamma (-2,790,485,144) overtaking Call gamma (623,308,299)
+  Put/Call ratio: 4.48
+
+This strike has flipped from support to resistance. Watch for breakdown.
+------------------------------------------------------------------------------------------
+[07:27:02 AM PT] [market_pulse] [TREND_DASHBOARD] Trend Dashboard - BEARISH
+Price: 6,941.47 | NetGamma: -4.05Bn | Wall: 7000 | Floor: 6950
+**TREND DASHBOARD - BEARISH HEARTBEAT**
+Score: 6 | Price: 6941 | Net Gamma: -4.05 Bn
+Call Wall: 7000 | Put Floor: 6950 | Spread: 50 pts
+
+5m NEUTRAL | dPx +0 | dG -0.02 Bn
+15m NEUTRAL | dPx +0 | dG +0.23 Bn
+30m NEUTRAL | dPx -7 | dG -3.47 Bn
+60m NEUTRAL | dPx +0 | dG -2.61 Bn
+
+Support targets: 6940 (-1.61Bn), 6930 (-0.81Bn), 6900 (-0.84Bn)
+Resistance targets: 6950 (+0.62Bn), 6975 (+0.64Bn), 6980 (+0.59Bn)
+
+Notes:
+- 30m gamma decay -3.47 Bn
+- 60m gamma decay -2.61 Bn
+- Gamma decay from peak: -266%
+- Call wall strengthening: +109% at 7000
+- Put floor building: +115% at 6950
+- Price pressing put floor (-9 pts)
+------------------------------------------------------------------------------------------
+[07:32:12 AM PT] [gex_ops] [GAMMA_COMPRESSION] Gamma Compression
+Price: 6,949.38 | NetGamma: +0.13Bn | Wall: 6950 | Floor: 6950
+**GAMMA COMPRESSION**
+Walls converging: spread narrowed 100%
+Call Wall: 7000 -> 6950
+Put Floor: 6950 -> 6950
+Spread: 50 -> 0 pts
+
+Compressed range often precedes expansion. Breakout imminent.
+------------------------------------------------------------------------------------------
+[07:32:12 AM PT] [gex_ops] [STRIKE_FLIP] Strike Flip: 6940
+Price: 6,949.38 | NetGamma: +0.13Bn | Wall: 6950 | Floor: 6950
+**STRIKE FLIP DETECTED**
+Strike 6940: Put gamma (-1,112,425,434) overtaking Call gamma (724,219,890)
+  Put/Call ratio: 1.54
+
+This strike has flipped from support to resistance. Watch for breakdown.
+------------------------------------------------------------------------------------------
+[07:32:12 AM PT] [market_pulse] [TREND_DASHBOARD] Trend Dashboard - BULLISH
+Price: 6,949.38 | NetGamma: +0.13Bn | Wall: 6950 | Floor: 6950
+**TREND DASHBOARD - BULLISH SMELL**
+Score: 5 | Price: 6949 | Net Gamma: +0.13 Bn
+Call Wall: 6950 | Put Floor: 6950 | Spread: 0 pts
+
+5m NEUTRAL | dPx -0 | dG +0.05 Bn
+15m NEUTRAL | dPx +8 | dG +4.17 Bn
+30m NEUTRAL | dPx +8 | dG +4.18 Bn
+60m NEUTRAL | dPx +8 | dG +4.18 Bn
+
+Support targets: 6945 (-0.76Bn), 6940 (-1.11Bn), 6900 (-0.68Bn)
+Resistance targets: 6950 (+1.37Bn), 6975 (+1.02Bn), 6980 (+0.79Bn)
+
+Notes:
+- 15m gamma build +4.17 Bn
+- 30m gamma build +4.18 Bn
+- 60m gamma build +4.18 Bn
+- Gamma decay from peak: -95%
+- Call wall shifted: 7000 -> 6950
+- Put floor weakening: -42% at 6950
+------------------------------------------------------------------------------------------
+[07:40:34 AM PT] [market_pulse] [TREND_DASHBOARD] Trend Dashboard - BEARISH
+Price: 6,941.47 | NetGamma: -5.18Bn | Wall: 7000 | Floor: 6950
+**TREND DASHBOARD - BEARISH HEARTBEAT**
+Score: 4 | Price: 6941 | Net Gamma: -5.18 Bn
+Call Wall: 7000 | Put Floor: 6950 | Spread: 50 pts
+
+5m NEUTRAL | dPx +0 | dG -0.53 Bn
+15m NEUTRAL | dPx -8 | dG -4.92 Bn
+30m NEUTRAL | dPx +0 | dG -0.70 Bn
+60m NEUTRAL | dPx +0 | dG -0.89 Bn
+
+Support targets: 6940 (-1.81Bn), 6930 (-0.87Bn), 6900 (-0.82Bn)
+Resistance targets: 6950 (+0.58Bn), 6975 (+0.62Bn), 6980 (+0.58Bn)
+
+Notes:
+- 15m gamma decay -4.92 Bn
+- Gamma decay from peak: -312%
+- Put floor building: +41% at 6950
+- Price pressing put floor (-9 pts)
+------------------------------------------------------------------------------------------
+[07:43:32 AM PT] [gex_ops] [BOUNCE_ZONE] Bounce Zone — Put Floor
+Price: 6,941.47 | NetGamma: -5.21Bn | Wall: 7000 | Floor: 6950
+**BOUNCE ZONE — Put Floor**
+Price 6941 within 9 pts of Put Floor 6950
+Regime: UNCONTROLLED
+
+LONG: Entry 6955-6965 | Stop 6945 | Target 6995 | R:R 3.0:1
+Instrument: Sell premium only (<1h)
+------------------------------------------------------------------------------------------
+[07:43:49 AM PT] [gex_ops] [GAMMA_COMPRESSION] Gamma Compression
+Price: 6,925.43 | NetGamma: -6.46Bn | Wall: 6950 | Floor: 6950
+**GAMMA COMPRESSION**
+Walls converging: spread narrowed 100%
+Call Wall: 7000 -> 6950
+Put Floor: 6950 -> 6950
+Spread: 50 -> 0 pts
+
+Compressed range often precedes expansion. Breakout imminent.
+------------------------------------------------------------------------------------------
+[07:46:32 AM PT] [market_pulse] [TREND_DASHBOARD] Trend Dashboard - BEARISH
+Price: 6,941.47 | NetGamma: -4.41Bn | Wall: 7000 | Floor: 6950
+**TREND DASHBOARD - BEARISH SMELL**
+Score: 5 | Price: 6941 | Net Gamma: -4.41 Bn
+Call Wall: 7000 | Put Floor: 6950 | Spread: 50 pts
+
+5m NEUTRAL | dPx +0 | dG +1.36 Bn
+15m NEUTRAL | dPx +0 | dG +0.22 Bn
+30m NEUTRAL | dPx +0 | dG -0.61 Bn
+60m NEUTRAL | dPx -15 | dG -6.71 Bn
+
+Support targets: 6940 (-1.68Bn), 6930 (-0.84Bn), 6900 (-0.84Bn)
+Resistance targets: 6950 (+0.61Bn), 6975 (+0.64Bn), 6980 (+0.59Bn)
+
+Notes:
+- 60m gamma decay -6.71 Bn
+- Gamma decay from peak: -281%
+- Put floor building: +132% at 6950
+- Price pressing put floor (-9 pts)
+------------------------------------------------------------------------------------------
+[07:49:33 AM PT] [gex_ops] [BOUNCE_ZONE] Bounce Zone — Put Floor
+Price: 6,941.47 | NetGamma: -4.64Bn | Wall: 7000 | Floor: 6950
+**BOUNCE ZONE — Put Floor**
+Price 6941 within 9 pts of Put Floor 6950
+Regime: UNCONTROLLED
+
+LONG: Entry 6955-6965 | Stop 6945 | Target 6995 | R:R 3.0:1
+Instrument: Sell premium only (<1h)
+------------------------------------------------------------------------------------------
+[07:52:26 AM PT] [market_pulse] [TREND_DASHBOARD] Trend Dashboard - BEARISH
+Price: 6,921.83 | NetGamma: -7.16Bn | Wall: 6950 | Floor: 6900
+**TREND DASHBOARD - BEARISH TREND**
+Score: 7 | Price: 6922 | Net Gamma: -7.16 Bn
+Call Wall: 6950 | Put Floor: 6900 | Spread: 50 pts
+
+5m NEUTRAL | dPx -5 | dG -0.92 Bn
+15m BEAR | dPx -20 | dG -2.55 Bn
+30m NEUTRAL | dPx -20 | dG -3.14 Bn
+60m NEUTRAL | dPx -35 | dG -9.45 Bn
+
+Support targets: 6915 (-0.69Bn), 6900 (-1.24Bn), 6930 (-0.72Bn)
+Resistance targets: 6940 (+0.65Bn), 6945 (+0.47Bn), 6950 (+0.93Bn)
+
+Notes:
+- 30m gamma decay -3.14 Bn
+- 60m gamma decay -9.45 Bn
+- Gamma decay from peak: -393%
+- Call wall shifted: 7000 -> 6950
+- Put floor shifted: 6950 -> 6900
+- Pivot pressure: 6950 ratio 1.14
+------------------------------------------------------------------------------------------
+[07:58:09 AM PT] [market_pulse] [TREND_DASHBOARD] Trend Dashboard - BEARISH
+Price: 6,910.58 | NetGamma: -9.16Bn | Wall: 6950 | Floor: 6900
+**TREND DASHBOARD - BEARISH TREND**
+Score: 10 | Price: 6911 | Net Gamma: -9.16 Bn
+Call Wall: 6950 | Put Floor: 6900 | Spread: 50 pts
+
+5m BEAR | dPx -10 | dG -1.69 Bn
+15m BEAR | dPx -31 | dG -3.95 Bn
+30m BEAR | dPx -31 | dG -4.87 Bn
+60m NEUTRAL | dPx -35 | dG -7.74 Bn
+
+Support targets: 6900 (-1.37Bn), 6890 (-0.77Bn), 6875 (-0.76Bn)
+Resistance targets: 6920 (+0.42Bn), 6940 (+0.50Bn), 6945 (+0.36Bn)
+
+Notes:
+- 60m gamma decay -7.74 Bn
+- Gamma decay from peak: -831%
+- Call wall weakening: -40% at 6950
+- Put floor shifted: 6950 -> 6900
+- Pivot pressure: 6950 ratio 1.05
+- Price pressing put floor (11 pts)
+------------------------------------------------------------------------------------------
+[07:59:43 AM PT] [gex_ops] [STRIKE_FLIP] Strike Flip: 6950
+Price: 6,941.47 | NetGamma: -3.89Bn | Wall: 7000 | Floor: 6950
+**STRIKE FLIP DETECTED**
+Strike 6950: Put gamma (-2,677,864,667) overtaking Call gamma (656,699,815)
+  Put/Call ratio: 4.08
+
+This strike has flipped from support to resistance. Watch for breakdown.
+------------------------------------------------------------------------------------------
+[08:04:07 AM PT] [market_pulse] [TREND_DASHBOARD] Trend Dashboard - BEARISH
+Price: 6,903.91 | NetGamma: -10.49Bn | Wall: 6950 | Floor: 6900
+**TREND DASHBOARD - BEARISH TREND**
+Score: 10 | Price: 6904 | Net Gamma: -10.49 Bn
+Call Wall: 6950 | Put Floor: 6900 | Spread: 50 pts
+
+5m NEUTRAL | dPx -1 | dG -0.22 Bn
+15m BEAR | dPx -21 | dG -3.94 Bn
+30m BEAR | dPx -38 | dG -5.74 Bn
+60m BEAR | dPx -47 | dG -10.72 Bn
+
+Support targets: 6900 (-1.33Bn), 6890 (-0.80Bn), 6875 (-0.83Bn)
+Resistance targets: 6920 (+0.39Bn), 6940 (+0.43Bn), 6945 (+0.30Bn)
+
+Notes:
+- Gamma decay from peak: -938%
+- Call wall weakening: -53% at 6950
+- Put floor shifted: 6950 -> 6900
+- Pivot pressure: 6940 ratio 1.48
+- Price pressing put floor (4 pts)
+------------------------------------------------------------------------------------------
+[08:05:41 AM PT] [gex_ops] [STRIKE_FLIP] Strike Flip: 6950
+Price: 6,941.47 | NetGamma: -4.15Bn | Wall: 7000 | Floor: 6950
+**STRIKE FLIP DETECTED**
+Strike 6950: Put gamma (-2,340,003,237) overtaking Call gamma (701,221,836)
+  Put/Call ratio: 3.34
+
+This strike has flipped from support to resistance. Watch for breakdown.
+------------------------------------------------------------------------------------------
+[08:07:10 AM PT] [gex_ops] [BOUNCE_ZONE] Bounce Zone — Put Floor
+Price: 6,941.47 | NetGamma: -4.34Bn | Wall: 7000 | Floor: 6950
+**BOUNCE ZONE — Put Floor**
+Price 6941 within 9 pts of Put Floor 6950
+Regime: UNCONTROLLED
+
+LONG: Entry 6955-6965 | Stop 6945 | Target 6995 | R:R 3.0:1
+Instrument: Sell premium only (<1h)
+------------------------------------------------------------------------------------------
+[08:09:45 AM PT] [gex_ops] [WALL_BREACH] Wall Breach
+Price: 6,892.92 | NetGamma: -12.24Bn | Wall: 6950 | Floor: 6900
+**WALL BREACH — PUT FLOOR**
+Price 6893 broke below Put Floor 6900
+
+Distance: -7 pts below
+Net Gamma: -12.24 Bn
+Spread: 50 pts
+
+Watch for accelerated selling or bounce back above.
+------------------------------------------------------------------------------------------
+[08:09:45 AM PT] [market_pulse] [TREND_DASHBOARD] Trend Dashboard - BEARISH
+Price: 6,892.92 | NetGamma: -12.24Bn | Wall: 6950 | Floor: 6900
+**TREND DASHBOARD - BEARISH TREND**
+Score: 11 | Price: 6893 | Net Gamma: -12.24 Bn
+Call Wall: 6950 | Put Floor: 6900 | Spread: 50 pts
+
+5m BEAR | dPx -7 | dG -0.97 Bn
+15m BEAR | dPx -21 | dG -3.56 Bn
+30m BEAR | dPx -49 | dG -7.06 Bn
+60m BEAR | dPx -50 | dG -10.33 Bn
+
+Support targets: 6890 (-0.82Bn), 6880 (-0.65Bn), 6875 (-0.93Bn)
+Resistance targets: 6900 (+0.36Bn), 6920 (+0.34Bn), 6940 (+0.33Bn)
+
+Notes:
+- Gamma decay from peak: -1077%
+- Call wall weakening: -66% at 6950
+- Put floor shifted: 6950 -> 6900
+- Price pressing put floor (-7 pts)
+------------------------------------------------------------------------------------------
+[08:11:40 AM PT] [gex_ops] [STRIKE_FLIP] Strike Flip: 6950
+Price: 6,941.47 | NetGamma: -4.30Bn | Wall: 7000 | Floor: 6950
+**STRIKE FLIP DETECTED**
+Strike 6950: Put gamma (-2,427,596,941) overtaking Call gamma (701,221,836)
+  Put/Call ratio: 3.46
+
+This strike has flipped from support to resistance. Watch for breakdown.
+------------------------------------------------------------------------------------------
+[08:13:08 AM PT] [gex_ops] [BOUNCE_ZONE] Bounce Zone — Put Floor
+Price: 6,941.47 | NetGamma: -4.13Bn | Wall: 7000 | Floor: 6950
+**BOUNCE ZONE — Put Floor**
+Price 6941 within 9 pts of Put Floor 6950
+Regime: UNCONTROLLED
+
+LONG: Entry 6955-6965 | Stop 6945 | Target 6995 | R:R 3.0:1
+Instrument: Sell premium only (<1h)
+------------------------------------------------------------------------------------------
+[08:15:45 AM PT] [market_pulse] [TREND_DASHBOARD] Trend Dashboard - BEARISH
+Price: 6,879.20 | NetGamma: -14.14Bn | Wall: 6900 | Floor: 6800
+**TREND DASHBOARD - BEARISH TREND**
+Score: 10 | Price: 6879 | Net Gamma: -14.14 Bn
+Call Wall: 6900 | Put Floor: 6800 | Spread: 100 pts
+
+5m BEAR | dPx -8 | dG -1.26 Bn
+15m BEAR | dPx -25 | dG -3.65 Bn
+30m BEAR | dPx -62 | dG -9.72 Bn
+60m BEAR | dPx -74 | dG -15.03 Bn
+
+Support targets: 6875 (-0.98Bn), 6850 (-0.68Bn), 6800 (-1.73Bn)
+Resistance targets: 6900 (+0.31Bn), 6920 (+0.26Bn), 6925 (+0.15Bn)
+
+Notes:
+- Gamma decay from peak: -1228%
+- Call wall shifted: 6950 -> 6900
+- Put floor shifted: 6950 -> 6800
+------------------------------------------------------------------------------------------
+[08:17:38 AM PT] [gex_ops] [STRIKE_FLIP] Strike Flip: 6950
+Price: 6,941.47 | NetGamma: -3.67Bn | Wall: 7000 | Floor: 6950
+**STRIKE FLIP DETECTED**
+Strike 6950: Put gamma (-2,164,815,829) overtaking Call gamma (734,613,352)
+  Put/Call ratio: 2.95
+
+This strike has flipped from support to resistance. Watch for breakdown.
+------------------------------------------------------------------------------------------
+[08:19:06 AM PT] [gex_ops] [BOUNCE_ZONE] Bounce Zone — Put Floor
+Price: 6,941.47 | NetGamma: -3.70Bn | Wall: 7000 | Floor: 6950
+**BOUNCE ZONE — Put Floor**
+Price 6941 within 9 pts of Put Floor 6950
+Regime: UNCONTROLLED
+
+LONG: Entry 6955-6965 | Stop 6945 | Target 6995 | R:R 3.0:1
+Instrument: Sell premium only (<1h)
+------------------------------------------------------------------------------------------
+[08:22:07 AM PT] [market_pulse] [TREND_DASHBOARD] Trend Dashboard - BULLISH
+Price: 6,941.47 | NetGamma: -3.37Bn | Wall: 7000 | Floor: 6950
+**TREND DASHBOARD - BULLISH SMELL**
+Score: 3 | Price: 6941 | Net Gamma: -3.37 Bn
+Call Wall: 7000 | Put Floor: 6950 | Spread: 50 pts
+
+5m BULL | dPx +64 | dG +10.68 Bn
+15m NEUTRAL | dPx +0 | dG +0.97 Bn
+30m NEUTRAL | dPx +20 | dG +3.79 Bn
+60m NEUTRAL | dPx +0 | dG +0.65 Bn
+
+Support targets: 6940 (-1.35Bn), 6900 (-0.84Bn), 6945 (-0.95Bn)
+Resistance targets: 6950 (+0.75Bn), 6975 (+0.71Bn), 6980 (+0.62Bn)
+
+Notes:
+- 15m gamma build +0.97 Bn
+- 30m gamma build +3.79 Bn
+- Gamma decay from peak: -471%
+- Price pressing put floor (-9 pts)
+------------------------------------------------------------------------------------------
+[08:23:36 AM PT] [gex_ops] [STRIKE_FLIP] Strike Flip: 6950
+Price: 6,941.47 | NetGamma: -3.60Bn | Wall: 7000 | Floor: 6950
+**STRIKE FLIP DETECTED**
+Strike 6950: Put gamma (-2,139,789,057) overtaking Call gamma (734,613,352)
+  Put/Call ratio: 2.91
+
+This strike has flipped from support to resistance. Watch for breakdown.
+------------------------------------------------------------------------------------------
+[08:25:04 AM PT] [gex_ops] [BOUNCE_ZONE] Bounce Zone — Put Floor
+Price: 6,941.47 | NetGamma: -3.65Bn | Wall: 7000 | Floor: 6950
+**BOUNCE ZONE — Put Floor**
+Price 6941 within 9 pts of Put Floor 6950
+Regime: UNCONTROLLED
+
+LONG: Entry 6955-6965 | Stop 6945 | Target 6995 | R:R 3.0:1
+Instrument: Sell premium only (<1h)
+------------------------------------------------------------------------------------------
+[08:27:44 AM PT] [market_pulse] [TREND_DASHBOARD] Trend Dashboard - BULLISH
+Price: 6,941.47 | NetGamma: -4.07Bn | Wall: 7000 | Floor: 6950
+**TREND DASHBOARD - BULLISH SMELL**
+Score: 3 | Price: 6941 | Net Gamma: -4.07 Bn
+Call Wall: 7000 | Put Floor: 6950 | Spread: 50 pts
+
+5m BULL | dPx +77 | dG +11.36 Bn
+15m NEUTRAL | dPx +0 | dG +0.05 Bn
+30m BULL | dPx +31 | dG +5.09 Bn
+60m NEUTRAL | dPx +0 | dG +0.22 Bn
+
+Support targets: 6940 (-1.45Bn), 6900 (-0.84Bn), 6945 (-1.04Bn)
+Resistance targets: 6950 (+0.71Bn), 6975 (+0.68Bn), 6980 (+0.61Bn)
+
+Notes:
+- Gamma decay from peak: -548%
+- Price pressing put floor (-9 pts)
+------------------------------------------------------------------------------------------
+[08:29:13 AM PT] [gex_ops] [STRIKE_FLIP] Strike Flip: 6950
+Price: 6,941.47 | NetGamma: -4.26Bn | Wall: 7000 | Floor: 6950
+**STRIKE FLIP DETECTED**
+Strike 6950: Put gamma (-2,402,570,169) overtaking Call gamma (701,221,836)
+  Put/Call ratio: 3.43
+
+This strike has flipped from support to resistance. Watch for breakdown.
+------------------------------------------------------------------------------------------
+[08:30:42 AM PT] [gex_ops] [BOUNCE_ZONE] Bounce Zone — Put Floor
+Price: 6,941.47 | NetGamma: -4.38Bn | Wall: 7000 | Floor: 6950
+**BOUNCE ZONE — Put Floor**
+Price 6941 within 9 pts of Put Floor 6950
+Regime: UNCONTROLLED
+
+LONG: Entry 6955-6965 | Stop 6945 | Target 6995 | R:R 3.0:1
+Instrument: Sell premium only (<1h)
+------------------------------------------------------------------------------------------
+[08:33:21 AM PT] [market_pulse] [TREND_DASHBOARD] Trend Dashboard - BULLISH
+Price: 6,941.47 | NetGamma: -4.06Bn | Wall: 7000 | Floor: 6950
+**TREND DASHBOARD - BULLISH SMELL**
+Score: 5 | Price: 6941 | Net Gamma: -4.06 Bn
+Call Wall: 7000 | Put Floor: 6950 | Spread: 50 pts
+
+5m BULL | dPx +79 | dG +11.54 Bn
+15m BULL | dPx +68 | dG +10.23 Bn
+30m BULL | dPx +38 | dG +6.43 Bn
+60m NEUTRAL | dPx -1 | dG -2.13 Bn
+
+Support targets: 6940 (-1.68Bn), 6930 (-0.84Bn), 6900 (-0.84Bn)
+Resistance targets: 6950 (+0.67Bn), 6975 (+0.66Bn), 6980 (+0.60Bn)
+
+Notes:
+- Call wall shifted: 6950 -> 7000
+- Put floor building: +87% at 6950
+- Price pressing put floor (-9 pts)
+------------------------------------------------------------------------------------------
+[08:34:50 AM PT] [gex_ops] [STRIKE_FLIP] Strike Flip: 6950
+Price: 6,941.47 | NetGamma: -4.99Bn | Wall: 7000 | Floor: 6950
+**STRIKE FLIP DETECTED**
+Strike 6950: Put gamma (-3,253,480,437) overtaking Call gamma (623,308,299)
+  Put/Call ratio: 5.22
+
+This strike has flipped from support to resistance. Watch for breakdown.
+------------------------------------------------------------------------------------------
+[08:36:23 AM PT] [gex_ops] [BOUNCE_ZONE] Bounce Zone — Put Floor
+Price: 6,941.47 | NetGamma: -4.95Bn | Wall: 7000 | Floor: 6950
+**BOUNCE ZONE — Put Floor**
+Price 6941 within 9 pts of Put Floor 6950
+Regime: UNCONTROLLED
+
+LONG: Entry 6955-6965 | Stop 6945 | Target 6995 | R:R 3.0:1
+Instrument: Sell premium only (<1h)
+------------------------------------------------------------------------------------------
+[08:38:42 AM PT] [market_pulse] [TREND_DASHBOARD] Trend Dashboard - BEARISH
+Price: 6,870.59 | NetGamma: -14.90Bn | Wall: 6900 | Floor: 6800
+**TREND DASHBOARD - BEARISH SMELL**
+Score: 5 | Price: 6871 | Net Gamma: -14.90 Bn
+Call Wall: 6900 | Put Floor: 6800 | Spread: 100 pts
+
+5m NEUTRAL | dPx +5 | dG +0.33 Bn
+15m NEUTRAL | dPx -1 | dG -0.19 Bn
+30m BEAR | dPx -22 | dG -2.66 Bn
+60m BEAR | dPx -71 | dG -9.71 Bn
+
+Support targets: 6850 (-0.78Bn), 6825 (-0.77Bn), 6800 (-2.00Bn)
+Resistance targets: 6900 (+0.30Bn), 6920 (+0.21Bn), 6925 (+0.12Bn)
+
+Notes:
+- Call wall shifted: 7000 -> 6900
+- Put floor shifted: 6950 -> 6800
+------------------------------------------------------------------------------------------
+[08:40:27 AM PT] [gex_ops] [STRIKE_FLIP] Strike Flip: 6950
+Price: 6,941.47 | NetGamma: -5.64Bn | Wall: 7000 | Floor: 6950
+**STRIKE FLIP DETECTED**
+Strike 6950: Put gamma (-3,015,726,097) overtaking Call gamma (567,655,772)
+  Put/Call ratio: 5.31
+
+This strike has flipped from support to resistance. Watch for breakdown.
+------------------------------------------------------------------------------------------
+[08:41:59 AM PT] [gex_ops] [BOUNCE_ZONE] Bounce Zone — Put Floor
+Price: 6,941.47 | NetGamma: -3.12Bn | Wall: 7000 | Floor: 6940
+**BOUNCE ZONE — Put Floor**
+Price 6941 within 1 pts of Put Floor 6940
+Regime: UNCONTROLLED
+
+LONG: Entry 6946-6958 | Stop 6934 | Target 6994 | R:R 3.0:1
+Instrument: Sell premium only (<1h)
+------------------------------------------------------------------------------------------
+[08:44:41 AM PT] [market_pulse] [TREND_DASHBOARD] Trend Dashboard - BEARISH
+Price: 6,868.08 | NetGamma: -15.15Bn | Wall: 6900 | Floor: 6800
+**TREND DASHBOARD - BEARISH SMELL**
+Score: 3 | Price: 6868 | Net Gamma: -15.15 Bn
+Call Wall: 6900 | Put Floor: 6800 | Spread: 100 pts
+
+5m NEUTRAL | dPx -8 | dG -0.28 Bn
+15m BULL | dPx +13 | dG +1.47 Bn
+30m NEUTRAL | dPx -11 | dG -1.01 Bn
+60m BEAR | dPx -73 | dG -10.49 Bn
+
+Support targets: 6850 (-0.82Bn), 6825 (-0.81Bn), 6800 (-2.06Bn)
+Resistance targets: 6900 (+0.29Bn), 6920 (+0.19Bn), 6925 (+0.11Bn)
+
+Notes:
+- Call wall shifted: 7000 -> 6900
+- Put floor shifted: 6950 -> 6800
+------------------------------------------------------------------------------------------
+[08:46:26 AM PT] [gex_ops] [STRIKE_FLIP] Strike Flip: 6950
+Price: 6,941.47 | NetGamma: -5.71Bn | Wall: 7000 | Floor: 6950
+**STRIKE FLIP DETECTED**
+Strike 6950: Put gamma (-3,003,212,711) overtaking Call gamma (545,394,761)
+  Put/Call ratio: 5.51
+
+This strike has flipped from support to resistance. Watch for breakdown.
+------------------------------------------------------------------------------------------
+[08:47:57 AM PT] [gex_ops] [BOUNCE_ZONE] Bounce Zone — Put Floor
+Price: 6,941.47 | NetGamma: -6.18Bn | Wall: 7000 | Floor: 6950
+**BOUNCE ZONE — Put Floor**
+Price 6941 within 9 pts of Put Floor 6950
+Regime: UNCONTROLLED
+
+LONG: Entry 6955-6965 | Stop 6945 | Target 6995 | R:R 3.0:1
+Instrument: Sell premium only (<1h)
+------------------------------------------------------------------------------------------
+[08:50:18 AM PT] [market_pulse] [TREND_DASHBOARD] Trend Dashboard - BEARISH
+Price: 6,866.34 | NetGamma: -16.50Bn | Wall: 6900 | Floor: 6800
+**TREND DASHBOARD - BEARISH TREND**
+Score: 6 | Price: 6866 | Net Gamma: -16.50 Bn
+Call Wall: 6900 | Put Floor: 6800 | Spread: 100 pts
+
+5m NEUTRAL | dPx -5 | dG -1.80 Bn
+15m NEUTRAL | dPx -1 | dG -1.64 Bn
+30m BEAR | dPx -75 | dG -12.78 Bn
+60m BEAR | dPx -56 | dG -9.44 Bn
+
+Support targets: 6850 (-0.81Bn), 6825 (-0.82Bn), 6800 (-2.19Bn)
+Resistance targets: 6900 (+0.28Bn), 6920 (+0.18Bn), 6925 (+0.10Bn)
+
+Notes:
+- 15m gamma decay -1.64 Bn
+- Call wall shifted: 6950 -> 6900
+- Put floor shifted: 6900 -> 6800
+------------------------------------------------------------------------------------------
+[08:52:27 AM PT] [gex_ops] [STRIKE_FLIP] Strike Flip: 6950
+Price: 6,941.47 | NetGamma: -5.65Bn | Wall: 7000 | Floor: 6950
+**STRIKE FLIP DETECTED**
+Strike 6950: Put gamma (-3,428,667,845) overtaking Call gamma (589,916,783)
+  Put/Call ratio: 5.81
+
+This strike has flipped from support to resistance. Watch for breakdown.
+------------------------------------------------------------------------------------------
+[08:53:55 AM PT] [gex_ops] [BOUNCE_ZONE] Bounce Zone — Put Floor
+Price: 6,941.47 | NetGamma: -6.24Bn | Wall: 7000 | Floor: 6950
+**BOUNCE ZONE — Put Floor**
+Price 6941 within 9 pts of Put Floor 6950
+Regime: UNCONTROLLED
+
+LONG: Entry 6955-6965 | Stop 6945 | Target 6995 | R:R 3.0:1
+Instrument: Sell premium only (<1h)
+------------------------------------------------------------------------------------------
+[08:55:24 AM PT] [market_pulse] [TREND_DASHBOARD] Trend Dashboard - BULLISH
+Price: 6,941.47 | NetGamma: -6.05Bn | Wall: 7000 | Floor: 6950
+**TREND DASHBOARD - BULLISH SMELL**
+Score: 2 | Price: 6941 | Net Gamma: -6.05 Bn
+Call Wall: 7000 | Put Floor: 6950 | Spread: 50 pts
+
+5m NEUTRAL | dPx +0 | dG -0.38 Bn
+15m NEUTRAL | dPx +0 | dG -0.42 Bn
+30m BULL | dPx +73 | dG +8.96 Bn
+60m NEUTRAL | dPx +0 | dG -1.92 Bn
+
+Support targets: 6940 (-1.96Bn), 6930 (-0.91Bn), 6900 (-0.82Bn)
+Resistance targets: 6950 (+0.58Bn), 6975 (+0.61Bn), 6980 (+0.57Bn)
+
+Notes:
+- Price pressing put floor (-9 pts)
+------------------------------------------------------------------------------------------
+[08:59:32 AM PT] [gex_ops] [BOUNCE_ZONE] Bounce Zone — Put Floor
+Price: 6,941.47 | NetGamma: -5.79Bn | Wall: 7000 | Floor: 6950
+**BOUNCE ZONE — Put Floor**
+Price 6941 within 9 pts of Put Floor 6950
+Regime: UNCONTROLLED
+
+LONG: Entry 6955-6965 | Stop 6945 | Target 6995 | R:R 3.0:1
+Instrument: Sell premium only (<1h)
+------------------------------------------------------------------------------------------
+[08:59:32 AM PT] [gex_ops] [STRIKE_FLIP] Strike Flip: 6950
+Price: 6,941.47 | NetGamma: -5.79Bn | Wall: 7000 | Floor: 6950
+**STRIKE FLIP DETECTED**
+Strike 6950: Put gamma (-2,965,672,552) overtaking Call gamma (567,655,772)
+  Put/Call ratio: 5.22
+
+This strike has flipped from support to resistance. Watch for breakdown.
+------------------------------------------------------------------------------------------

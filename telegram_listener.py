@@ -43,6 +43,11 @@ from recap import build_hourly_recap_message, is_rth_time
 from scheduler import Scheduler
 from trend_review import run_trend_review
 from spx_million_parser import parse_spx_million_message, format_spx_million_signal
+from consensus_tracker import ConsensusTracker
+from day_classifier import DayClassifier
+from delivery_watchdog import DeliveryWatchdog
+from conviction_engine import ConvictionEngine
+from qqq_analysis import QQQAnalyzer
 
 PT_TZ = pytz.timezone("US/Pacific")
 log = logging.getLogger(__name__)
@@ -71,11 +76,15 @@ class GEXPipeline:
         self._last_message_received_at: Optional[datetime] = None
         self._last_snapshot_received_at: Optional[datetime] = None
         self._last_snapshot_timestamp_pt: Optional[datetime] = None
+        self._last_snapshot_price: Optional[float] = None
+        # Rolling price buffer to detect stale-stream oscillation
+        from collections import deque
+        self._recent_prices: deque = deque(maxlen=10)
         self._data_lag_active: bool = False
         self._data_lag_started_at: Optional[datetime] = None
         self._data_feed_cfg = CFG.get("data_feed", {})
         self._data_feed_stale_secs = int(self._data_feed_cfg.get("stale_seconds", 300))
-        self._data_feed_channel = self._data_feed_cfg.get("alert_channel", "gex_ops")
+        self._data_feed_channel = self._data_feed_cfg.get("alert_channel", "gex_engine")
         self._flip_band_cfg = CFG.get("flip_bands", {})
         self._flip_band_cache = []
         self._flip_band_last_compute: Optional[datetime] = None
@@ -83,9 +92,9 @@ class GEXPipeline:
         self._move_ctx_stats = None
         self._move_ctx_last_compute: Optional[datetime] = None
         self._quiet_cfg = CFG.get("quiet_summary", {})
-        self._quiet_channel = str(self._quiet_cfg.get("alert_channel", "market_pulse"))
+        self._quiet_channel = str(self._quiet_cfg.get("alert_channel", "gex_engine"))
         self._micro_cfg = CFG.get("micro_pulse", {})
-        self._micro_channel = str(self._micro_cfg.get("alert_channel", "intraday_fast"))
+        self._micro_channel = str(self._micro_cfg.get("alert_channel", "gex_engine"))
         self._last_micro_pulse_ts: Optional[datetime] = None
         self._last_micro_pulse_price: Optional[float] = None
         self._last_internal_alert_ts: Optional[datetime] = None
@@ -98,13 +107,33 @@ class GEXPipeline:
         self._day_profile_last_compute: Optional[datetime] = None
         self._rth_open_date: Optional[str] = None
         self._rth_open_price: Optional[float] = None
+        self._daily_ma20: Optional[float] = None
+        self._daily_ma20_date: Optional[str] = None
+        # Live MA cache for MA_SNAP signals
+        self._live_ma_cache: Optional[dict] = None
+        self._live_ma_cache_ts: float = 0
         alerts_cfg = CFG.get("alerts", {})
         alert_mode = str(alerts_cfg.get("mode", "full")).strip().lower()
         if alert_mode not in {"full", "deep_context"}:
             log.warning(f"Unknown alerts.mode='{alert_mode}'. Falling back to 'full'.")
             alert_mode = "full"
         self._alert_mode = alert_mode
+        # Consensus tracker for Arabic channel directional calls
+        cons_cfg = CFG.get("consensus", {})
+        self.consensus = ConsensusTracker(
+            window_minutes=int(cons_cfg.get("window_minutes", 15)),
+            min_channels=int(cons_cfg.get("min_channels", 1)),
+        )
+        self._consensus_channels = set(cons_cfg.get("channels", []))
+        self._consensus_cooldown_secs = int(cons_cfg.get("cooldown_seconds", 900))
+        self._last_consensus_alert_ts: Optional[float] = None
+        self.classifier = DayClassifier()
+        self.conviction = ConvictionEngine(CFG)
+        _db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), CFG["database"]["path"])
+        self.qqq = QQQAnalyzer(db_path=_db_path, config=CFG)
         self._setup_scheduler()
+        self.watchdog = DeliveryWatchdog(self)
+        self.watchdog.wrap_senders()
 
     def _intraday_alerts_enabled(self) -> bool:
         return self._alert_mode == "full"
@@ -113,42 +142,8 @@ class GEXPipeline:
         return self._alert_mode in {"full", "deep_context"}
 
     def _setup_scheduler(self):
-        scheduled = CFG.get("scheduled", {})
-        self.scheduler.add_event(
-            "morning_brief",
-            scheduled.get("morning_brief_time", "06:00"),
-            self._fire_morning_brief,
-        )
-        self.scheduler.add_event(
-            "morning_checklist",
-            scheduled.get("morning_checklist_time", "06:35"),
-            self._fire_morning_checklist,
-        )
-        self.scheduler.add_event(
-            "final_15",
-            scheduled.get("final_15_time", "12:45"),
-            self._fire_final_15,
-        )
-        self.scheduler.add_event(
-            "eod_summary",
-            scheduled.get("eod_summary_time", "13:05"),
-            self._fire_eod_summary,
-        )
-        self.scheduler.add_event(
-            "trend_review",
-            scheduled.get("trend_review_time", "13:20"),
-            self._fire_trend_review,
-        )
-        self.scheduler.add_event(
-            "pin_forecast",
-            scheduled.get("pin_forecast_time", "12:30"),
-            self._fire_pin_forecast,
-        )
-        self.scheduler.add_event(
-            "gap_alert",
-            scheduled.get("gap_alert_time", "13:10"),
-            self._fire_gap_alert_scheduled,
-        )
+        """Scheduler disabled — data-only pipeline, no signal dispatch."""
+        pass
 
     def _get_day_profile(self, now: datetime):
         today = now.strftime("%Y-%m-%d")
@@ -249,6 +244,142 @@ class GEXPipeline:
         else:
             self._rth_open_price = snapshot.curr_price
 
+    def _get_daily_ma20(self) -> Optional[float]:
+        """Get cached daily MA20, computing once per day."""
+        today = datetime.now(PT_TZ).strftime("%Y-%m-%d")
+        if self._daily_ma20_date == today and self._daily_ma20 is not None:
+            return self._daily_ma20
+        self._daily_ma20 = self._compute_daily_ma20()
+        self._daily_ma20_date = today
+        if self._daily_ma20 is not None:
+            log.info(f"Daily MA20 = {self._daily_ma20:.2f}")
+        return self._daily_ma20
+
+    def _compute_daily_ma20(self) -> Optional[float]:
+        """Get daily MA20 from DB closes. Called once per day."""
+        try:
+            conn = get_conn()
+            rows = conn.execute("""
+                SELECT s1.date_pt,
+                    (SELECT curr_price FROM gex_snapshots s2
+                     WHERE s2.date_pt = s1.date_pt AND s2.session_tag='RTH'
+                     ORDER BY s2.timestamp_pt DESC LIMIT 1) as close_px
+                FROM (SELECT DISTINCT date_pt FROM gex_snapshots
+                      WHERE session_tag='RTH'
+                      ORDER BY date_pt DESC LIMIT 25) s1
+                ORDER BY s1.date_pt
+            """).fetchall()
+            conn.close()
+            closes = [r["close_px"] for r in rows if r["close_px"] is not None]
+            if not closes:
+                return None
+            n = min(len(closes), 20)
+            return sum(closes[-n:]) / n
+        except Exception as e:
+            log.error(f"Failed to compute daily MA20: {e}")
+            return None
+
+    def _get_live_ma_values(self) -> Optional[dict]:
+        """Compute live MA values from raw snapshots for MA_SNAP signals.
+
+        Queries last ~6000 RTH snapshots (~20 trading days), resamples into
+        3m/5m/15m/30m/60m bars, computes rolling MAs. Cached for 5 minutes.
+        Returns dict of {ma_key: float, ma_key_recent_max_dist: float}.
+        """
+        import pandas as pd
+
+        now_ts = datetime.now(PT_TZ).timestamp()
+        if self._live_ma_cache is not None and (now_ts - self._live_ma_cache_ts) < 300:
+            return self._live_ma_cache
+
+        try:
+            conn = get_conn()
+            rows = conn.execute(
+                "SELECT timestamp_pt, curr_price FROM gex_snapshots "
+                "WHERE session_tag='RTH' "
+                "ORDER BY timestamp_pt DESC LIMIT 6000"
+            ).fetchall()
+            conn.close()
+        except Exception as e:
+            log.error(f"Failed to query snapshots for live MAs: {e}")
+            return self._live_ma_cache
+
+        if not rows or len(rows) < 100:
+            return None
+
+        # Build DataFrame — rows are descending, reverse for chronological order
+        timestamps = []
+        prices = []
+        for r in reversed(rows):
+            ts_val = r["timestamp_pt"]
+            if isinstance(ts_val, (int, float)):
+                timestamps.append(datetime.fromtimestamp(ts_val, tz=PT_TZ))
+            else:
+                timestamps.append(ts_val)
+            prices.append(r["curr_price"])
+
+        df = pd.DataFrame({"price": prices}, index=pd.DatetimeIndex(timestamps))
+        # Drop duplicate timestamps (keep last)
+        df = df[~df.index.duplicated(keep="last")]
+
+        current_price = prices[-1]
+
+        # Define MAs to compute: {ma_key: (resample_freq, period)}
+        ma_specs = {
+            "3m_200":  ("3min",  200),
+            "5m_20":   ("5min",   20),
+            "5m_200":  ("5min",  200),
+            "15m_50":  ("15min",  50),
+            "15m_200": ("15min", 200),
+            "30m_20":  ("30min",  20),
+            "30m_200": ("30min", 200),
+            "60m_20":  ("60min",  20),
+            "60m_50":  ("60min",  50),
+        }
+
+        result = {}
+        for ma_key, (freq, period) in ma_specs.items():
+            try:
+                bars = df["price"].resample(freq).last().dropna()
+                if len(bars) < period:
+                    continue
+                ma_series = bars.rolling(period).mean()
+                ma_val = ma_series.iloc[-1]
+                if pd.isna(ma_val):
+                    continue
+                result[ma_key] = float(ma_val)
+
+                # Compute recent max distance (last ~10 min of bars) for retrace check
+                # Look at last 5-10 bars of the resampled timeframe
+                lookback_bars = max(3, min(10, int(600 / int(freq.replace("min", "")))))
+                recent_slice = bars.iloc[-lookback_bars:]
+                recent_prices = recent_slice.values
+                max_dist = max(abs(p - ma_val) for p in recent_prices) if len(recent_prices) > 0 else 0
+                result[f"{ma_key}_recent_max_dist"] = float(max_dist)
+            except Exception as e:
+                log.debug(f"MA computation failed for {ma_key}: {e}")
+                continue
+
+        # VWAP and intraday stats from today's prices
+        try:
+            today_date = datetime.now(PT_TZ).date()
+            today_mask = [ts.date() == today_date for ts in timestamps]
+            today_prices = [p for p, m in zip(prices, today_mask) if m]
+            if today_prices:
+                result["vwap"] = sum(today_prices) / len(today_prices)
+                result["day_open"] = today_prices[0]
+                result["day_high"] = max(today_prices)
+                result["day_low"] = min(today_prices)
+        except Exception as e:
+            log.debug(f"VWAP computation failed: {e}")
+
+        if result:
+            self._live_ma_cache = result
+            self._live_ma_cache_ts = now_ts
+            log.info(f"Live MAs computed: {len([k for k in result if '_recent' not in k and k not in ('vwap','day_open','day_high','day_low')])} MAs")
+
+        return result
+
     def process_message(self, text: str, envelope_dt: Optional[datetime] = None):
         """Main pipeline: parse -> store -> compute -> signal -> alert."""
         # Log raw message for debugging
@@ -267,6 +398,23 @@ class GEXPipeline:
             log.debug("Skipping EXPIRED_ECHO message.")
             return
 
+        # Reject stale-stream oscillation: SpotGamma channel sends two streams —
+        # a live feed and a stale replay. The stale stream repeats the same price
+        # while the real stream moves. Detect: if this price appeared 2+ times in
+        # the last 10 snapshots while other significantly different prices also
+        # appeared, this is a stale echo.
+        if snapshot.session_tag == "RTH" and len(self._recent_prices) >= 4:
+            price = snapshot.curr_price
+            same_count = sum(1 for p in self._recent_prices if abs(p - price) < 0.02)
+            diff_count = sum(1 for p in self._recent_prices if abs(p - price) > 5)
+            if same_count >= 2 and diff_count >= 2:
+                log.info(
+                    f"Dropping stale echo: price={price:.2f} appeared {same_count}x "
+                    f"in last {len(self._recent_prices)} snapshots while {diff_count} "
+                    f"others were >5pts away"
+                )
+                return
+
         # Store to SQLite
         row_id = save_snapshot(snapshot)
         log.info(
@@ -275,6 +423,8 @@ class GEXPipeline:
         )
         self._last_snapshot_received_at = now
         self._last_snapshot_timestamp_pt = snapshot.timestamp_pt
+        self._last_snapshot_price = snapshot.curr_price
+        self._recent_prices.append(snapshot.curr_price)
 
         if self._data_lag_active:
             self._fire_data_restored(now)
@@ -289,7 +439,6 @@ class GEXPipeline:
             self._process_rth(snapshot, now_ts)
         elif snapshot.session_tag in ("NEXT_DAY_PREVIEW", "PREMARKET"):
             self._process_off_hours(snapshot, now_ts)
-            self._maybe_fire_gap_alert(snapshot)
 
     def _process_rth(self, snapshot: GEXSnapshot, now_ts: float):
         """RTH processing: always compute 15-min, regime every 5 min, check all signals."""
@@ -357,45 +506,291 @@ class GEXPipeline:
             trend_dashboard.notes.append(day_profile["note"])
             trend_dashboard.flags.append(day_profile["flag"])
 
-        # Evaluate all signals (every message), using cached regime/advanced when needed
-        signals = self.interpreter.evaluate_all(
-            snapshot=snapshot,
-            fifteen_min=fifteen_min,
-            one_hour=one_hour,
-            overnight=None,
-            advanced=advanced,
-            trend=trend_dashboard,
-            snapshots_1h=snapshots_1h,
-            open_price=self._rth_open_price,
+        # --- Data pipeline complete ---
+        # Metrics (fifteen_min, one_hour, advanced, trend_dashboard) are computed
+        # and cached for API consumption. No signal generation or alert dispatch.
+
+    def _check_classifier_snapshot(self, snapshot: GEXSnapshot):
+        """Run EM fade + trade exit checks on every RTH snapshot."""
+        em_levels = self.interpreter.compute_expected_move()
+
+        fade_msg = self.classifier.check_em_fade(snapshot, em_levels)
+        if fade_msg:
+            self._send_classifier_alert("EM Fade", fade_msg)
+
+        exit_msg = self.classifier.check_trade_exit(snapshot)
+        if exit_msg:
+            self._send_classifier_alert("Trade Exit", exit_msg)
+
+    def _send_classifier_alert(self, title: str, message: str):
+        """Send a day_classifier alert to Discord AND Telegram."""
+        from signal_interpreter import Signal, SignalType, SIGNAL_CHANNEL_MAP
+        _classifier_type_map = {
+            "Morning Read": SignalType.MORNING_READ,
+            "Morning Bet": SignalType.MORNING_BET,
+            "Pin Butterfly": SignalType.PIN_TRADE,
+            "EM Fade": SignalType.EM_FADE,
+            "Trade Exit": SignalType.EM_FADE,  # exits share EM_FADE cooldown
+        }
+        sig_type = _classifier_type_map.get(title, SignalType.EM_FADE)
+        channel = SIGNAL_CHANNEL_MAP.get(sig_type, "gex_trades")
+        signal = Signal(
+            signal_type=sig_type,
+            title=title,
+            message=message,
+            channel=channel,
+            priority=1,
+            timestamp=datetime.now(PT_TZ),
+        )
+        disc_ok = self.discord.send_signal(signal)
+        tg_ok = self.telegram.send_signal(signal)
+        log.info(f"Classifier [{title}]: Discord={'OK' if disc_ok else 'SKIP'}, Telegram={'OK' if tg_ok else 'SKIP'}")
+
+    def _check_market_intel(self, snapshot: GEXSnapshot, one_hour):
+        """Gamma brain: when Arabic channels call a direction, check gamma mechanics.
+
+        Scenarios that make money:
+        1. CW Fade: SHORT + pos gamma + price above CW = dealers sell rallies
+        2. Neg gamma acceleration: SHORT + neg gamma = selling feeds on itself
+        3. Rubber band: LONG + neg gamma + near put floor = dealers buy dips
+        4. CW Breakout: LONG + price punches THROUGH call wall with momentum
+           = dealers forced to chase, pin thesis broken, ride the breakout
+        5. PF Breakdown: SHORT + price crashes THROUGH put floor with momentum
+           = put floor failed, acceleration down
+        6. Late session amplifier: final hour 0DTE gamma is extreme, moves are fast
+        """
+        import time as time_mod
+
+        consensus = self.consensus.get_consensus()
+        if not consensus.direction:
+            return None
+
+        # Cooldown check
+        now_ts = time_mod.time()
+        if (
+            self._last_consensus_alert_ts is not None
+            and (now_ts - self._last_consensus_alert_ts) < self._consensus_cooldown_secs
+        ):
+            return None
+
+        gamma_bn = snapshot.net_gamma / 1e9
+        price = snapshot.curr_price
+        cw = snapshot.call_wall
+        pf = snapshot.put_floor
+
+        # Price velocity: how fast is price moving? (5-min lookback)
+        recents = get_recent_snapshots(5, session_tag="RTH")
+        price_velocity = 0.0  # pts per 5 min
+        gamma_velocity = 0.0  # Bn per 5 min
+        if recents and len(recents) >= 2:
+            price_velocity = recents[-1].curr_price - recents[0].curr_price
+            gamma_velocity = (recents[-1].net_gamma - recents[0].net_gamma) / 1e9
+
+        # Late session detection (final hour = 12:00-13:00 PT)
+        now_pt = datetime.now(PT_TZ).time()
+        is_late = now_pt >= time(12, 0)
+        late_label = " [LATE SESSION]" if is_late else ""
+
+        # Targets are more aggressive in final hour
+        target_mult = 1.5 if is_late else 1.0
+
+        verdict = None
+        reason = None
+        trade_side = None
+        entry = None
+        stop = None
+        target = None
+        instrument = None
+        setup_name = None
+
+        if consensus.direction == "LONG":
+            # === SCENARIO 3: Rubber band (neg gamma bounce) ===
+            if gamma_bn < -5:
+                reason = (
+                    f"Gamma at {gamma_bn:+.1f}Bn — dealers forced to buy on dips. "
+                    f"Rubber band effect near put floor {pf:.0f}. "
+                    f"Negative gamma = dealer hedging creates mechanical bounce."
+                )
+                trade_side = "CALL"
+                entry = price
+                stop = pf - 5
+                target = price + int(15 * target_mult)
+                instrument = f"SPX 0DTE {round(price / 5) * 5 + 5}C"
+                verdict = "CONFIRMED"
+                setup_name = "RUBBER BAND"
+
+            # === SCENARIO 4: CW Breakout ===
+            # Price above call wall + rising = dealers forced to chase
+            # This is what the 12:45 trade was — NOT a pin, a breakout
+            elif gamma_bn > 0 and price > cw + 3 and price_velocity > 3:
+                reason = (
+                    f"Price {price:.0f} broke above Call Wall {cw:.0f} with momentum "
+                    f"({price_velocity:+.1f} pts/5min). Gamma at {gamma_bn:+.1f}Bn. "
+                    f"Dealers who were short delta are now forced to buy to hedge. "
+                    f"Pin thesis BROKEN — this is a breakout chase."
+                )
+                trade_side = "CALL"
+                entry = price
+                stop = cw - 2  # back below CW = breakout failed
+                target = price + int(15 * target_mult)
+                instrument = f"SPX 0DTE {round(price / 5) * 5 + 5}C"
+                verdict = "BREAKOUT"
+                setup_name = "CW BREAKOUT"
+
+            # === Gamma rising fast toward consensus direction ===
+            elif gamma_velocity > 1.0 and price_velocity > 5:
+                reason = (
+                    f"Gamma surging {gamma_velocity:+.1f}Bn/5min with price "
+                    f"velocity {price_velocity:+.1f} pts/5min. "
+                    f"Momentum building in consensus direction. "
+                    f"Gamma {gamma_bn:+.1f}Bn, CW {cw:.0f}."
+                )
+                trade_side = "CALL"
+                entry = price
+                stop = price - 8
+                target = price + int(12 * target_mult)
+                instrument = f"SPX 0DTE {round(price / 5) * 5 + 5}C"
+                verdict = "MOMENTUM"
+                setup_name = "GAMMA SURGE"
+
+            else:
+                log.info(
+                    f"Market Intel: consensus LONG | G={gamma_bn:+.1f}Bn "
+                    f"CW={cw:.0f} px={price:.0f} vel={price_velocity:+.1f} — SKIP"
+                )
+                return None
+
+        elif consensus.direction == "SHORT":
+            # === SCENARIO 1: CW Fade (pos gamma ceiling) ===
+            if gamma_bn > 5 and price >= cw - 5:
+                reason = (
+                    f"Gamma at {gamma_bn:+.1f}Bn — dealers short delta above "
+                    f"Call Wall {cw:.0f}. Every rally attempt gets sold. "
+                    f"CW Fade: extreme positive gamma = mechanical ceiling."
+                )
+                trade_side = "PUT"
+                entry = price
+                stop = cw + 12
+                target = price - int(20 * target_mult)
+                instrument = f"SPX 0DTE {round(price / 5) * 5 - 5}P"
+                verdict = "CONFIRMED"
+                setup_name = "CW FADE"
+
+            # === SCENARIO 2: Neg gamma acceleration ===
+            elif gamma_bn < -5:
+                reason = (
+                    f"Gamma at {gamma_bn:+.1f}Bn — no floor. Dealer hedging "
+                    f"amplifies every downtick. Selling feeds on itself."
+                )
+                trade_side = "PUT"
+                entry = price
+                stop = price + 12
+                target = price - int(25 * target_mult)
+                instrument = f"SPX 0DTE {round(price / 5) * 5 - 5}P"
+                verdict = "CONFIRMED"
+                setup_name = "NEG GAMMA ACCEL"
+
+            # === SCENARIO 5: PF Breakdown ===
+            elif price < pf - 3 and price_velocity < -3:
+                reason = (
+                    f"Price {price:.0f} crashed below Put Floor {pf:.0f} with "
+                    f"momentum ({price_velocity:+.1f} pts/5min). "
+                    f"Gamma {gamma_bn:+.1f}Bn. Put floor FAILED — no support. "
+                    f"Acceleration down."
+                )
+                trade_side = "PUT"
+                entry = price
+                stop = pf + 2
+                target = price - int(20 * target_mult)
+                instrument = f"SPX 0DTE {round(price / 5) * 5 - 5}P"
+                verdict = "BREAKDOWN"
+                setup_name = "PF BREAKDOWN"
+
+            # === Gamma falling + price falling = momentum short ===
+            elif gamma_velocity < -1.0 and price_velocity < -5:
+                reason = (
+                    f"Gamma collapsing {gamma_velocity:+.1f}Bn/5min with price "
+                    f"falling {price_velocity:+.1f} pts/5min. "
+                    f"Momentum building to downside. "
+                    f"Gamma {gamma_bn:+.1f}Bn, PF {pf:.0f}."
+                )
+                trade_side = "PUT"
+                entry = price
+                stop = price + 8
+                target = price - int(12 * target_mult)
+                instrument = f"SPX 0DTE {round(price / 5) * 5 - 5}P"
+                verdict = "MOMENTUM"
+                setup_name = "GAMMA COLLAPSE"
+
+            else:
+                log.info(
+                    f"Market Intel: consensus SHORT | G={gamma_bn:+.1f}Bn "
+                    f"PF={pf:.0f} px={price:.0f} vel={price_velocity:+.1f} — SKIP"
+                )
+                return None
+        else:
+            return None
+
+        # Build the alert
+        direction_label = "SHORT" if trade_side == "PUT" else "LONG"
+        dir_emoji = "\U0001f7e2" if direction_label == "LONG" else "\U0001f534"
+        confidence = consensus.confidence
+        channels_str = ", ".join(c.channel for c in consensus.calls)
+        risk = abs(stop - entry)
+        reward = abs(target - entry)
+        rr = reward / risk if risk > 0 else 0
+
+        # Type 2: Channel Relay with GEX validation
+        from output_formatter import format_type2_relay
+        from delta_tracker import DeltaTracker
+
+        if not hasattr(self, '_relay_delta_tracker'):
+            self._relay_delta_tracker = DeltaTracker()
+
+        checks = {
+            "Consensus Direction": True,
+            "Gamma Alignment": (gamma_bn < -3 if direction_label == "LONG" else gamma_bn > 3),
+            "Price Velocity": abs(price_velocity) > 3,
+            "Wall Proximity": (abs(price - pf) < 15 if direction_label == "LONG" else abs(price - cw) < 15),
+        }
+
+        delta_line = self._relay_delta_tracker.format_delta_line("gex_relay", "consensus", {
+            "price": price, "gamma_bn": gamma_bn,
+            "call_wall": cw, "put_floor": pf,
+        })
+
+        message = format_type2_relay(
+            source=f"Consensus ({consensus.strength} channels)",
+            direction=direction_label,
+            confidence=confidence,
+            checks=checks,
+            price=price,
+            gamma_bn=gamma_bn,
+            entry=entry,
+            stop=stop,
+            target=target,
+            scenario=f"{setup_name}: {reason[:120]}..." if len(reason) > 120 else f"{setup_name}: {reason}",
+            delta_line=delta_line,
         )
 
-        if signals:
-            self._last_internal_alert_ts = datetime.now(PT_TZ)
-            if self._intraday_alerts_enabled():
-                sent = self.discord.send_batch(signals)
-                log.info(f"Sent {sent}/{len(signals)} signals to Discord.")
-                # Send high-priority signals to Telegram (separate cooldowns)
-                tg_sent = self.telegram.send_batch(signals)
-                if tg_sent:
-                    log.info(f"Sent {tg_sent}/{len(signals)} signals to Telegram.")
-            else:
-                log.debug(
-                    "Suppressed %d intraday signals (alerts.mode=%s)",
-                    len(signals),
-                    self._alert_mode,
-                )
+        signal = Signal(
+            signal_type=SignalType.MARKET_CONSENSUS,
+            title=f"Market Intel \u2014 {direction_label} {verdict}",
+            message=message,
+            channel="gex_relay",
+            priority=SignalType.MARKET_CONSENSUS,
+        )
 
-        # RTH pulse (5-min heartbeat) — handled by cooldown
-        if self._intraday_alerts_enabled() and self.discord.cooldown.can_fire("rth_pulse"):
-            pulse = self.interpreter.generate_rth_pulse(snapshot, one_hour, advanced)
-            self.discord.send_signal(pulse)
+        self.discord.send_signal(signal)
+        self.telegram.send_signal(signal)
+        self._last_consensus_alert_ts = now_ts
 
-        if self._intraday_alerts_enabled():
-            self._maybe_fire_micro_pulse(snapshot, fifteen_min)
-
-        self._maybe_fire_hourly_recap()
-        if self._intraday_alerts_enabled():
-            self._maybe_fire_quiet_summary(snapshot, fifteen_min, one_hour, advanced)
+        log.info(
+            f"Market Intel FIRED: {setup_name} {direction_label} {verdict} | "
+            f"G={gamma_bn:+.1f}Bn vel={price_velocity:+.1f} | "
+            f"{consensus.strength} ch"
+        )
+        return signal
 
     def _maybe_fire_micro_pulse(
         self,
@@ -455,6 +850,26 @@ class GEXPipeline:
         if self.discord.send_signal(signal):
             self._last_micro_pulse_ts = now
             self._last_micro_pulse_price = snapshot.curr_price
+        self.telegram.send_signal(signal)
+
+    def _maybe_fire_conviction_signal(
+        self,
+        snapshot: GEXSnapshot,
+        trend,
+    ):
+        """Poll external systems and fire conviction signal if 2+ systems agree."""
+        if not is_rth_time(datetime.now(PT_TZ)):
+            return
+
+        if not self.discord.cooldown.can_fire("conviction_signal"):
+            return
+
+        signal = self.conviction.maybe_fire(snapshot, trend)
+        if signal is None:
+            return
+
+        if self.discord.send_signal(signal):
+            log.info(f"Conviction signal sent to Discord: {signal.metadata.get('score')}/10 {signal.metadata.get('direction')}")
 
     def _process_off_hours(self, snapshot: GEXSnapshot, now_ts: float):
         """Off-hours: store, compute overnight drift every 30 min."""
@@ -464,18 +879,7 @@ class GEXPipeline:
             eod = get_previous_trading_day_eod()
             if eod:
                 overnight = compute_overnight_drift(eod, snapshot)
-                if overnight:
-                    signals = self.interpreter.evaluate_all(
-                        snapshot=snapshot,
-                        fifteen_min=None,
-                        one_hour=None,
-                        overnight=overnight,
-                        advanced=None,
-                        trend=None,
-                    )
-                    if signals and self._intraday_alerts_enabled():
-                        self.discord.send_batch(signals)
-                        self.telegram.send_batch(signals)
+                # Signal generation stripped — data-only pipeline
 
             self._last_overnight_compute = now_ts
 
@@ -509,7 +913,7 @@ class GEXPipeline:
         gap_pct = (gap_pts / close_px * 100) if close_px else 0.0
         direction = "GAP UP" if gap_pts > 0 else "GAP DOWN" if gap_pts < 0 else "FLAT"
 
-        channel = self._gap_alert_cfg.get("alert_channel", "daily_intel")
+        channel = self._gap_alert_cfg.get("alert_channel", "gex_context")
         msg = (
             f"**{direction}**\n"
             f"Reference Close: {close_px:.2f}\n"
@@ -675,6 +1079,8 @@ class GEXPipeline:
                 "Snapshot timestamp skew detected. Using envelope timestamp. "
                 f"snap={snap_ts}, envelope={envelope_pt}, now={now}"
             )
+            # Mark as skewed so process_message can dedup against stale streams
+            snapshot._timestamp_was_skewed = True
             snapshot.timestamp_pt = envelope_pt
             snapshot.session_tag = classify_session(envelope_pt)
 
@@ -879,12 +1285,13 @@ class GEXPipeline:
             signal_type=SignalType.HOURLY_RECAP,
             title="Hourly Recap",
             message=msg,
-            channel="daily_intel",
+            channel="gex_engine",
             priority=SignalType.HOURLY_RECAP,
         )
 
         # Send once per hour window
         self.discord.send_signal(signal)
+        self.telegram.send_signal(signal)
         self._last_hourly_recap_hour = hour_key
 
     def _maybe_fire_quiet_summary(
@@ -923,6 +1330,7 @@ class GEXPipeline:
         signal.channel = self._quiet_channel
         if self.discord.send_signal(signal):
             self._last_quiet_summary_ts = now
+        self.telegram.send_signal(signal)
 
     def _fire_morning_checklist(self):
         """Send a one-shot 6:35 AM PT checklist for opening bias and levels."""
@@ -968,13 +1376,96 @@ class GEXPipeline:
             signal_type=SignalType.MORNING_CHECKLIST,
             title="Morning Checklist",
             message=msg,
-            channel="market_pulse",
+            channel="gex_context",
             priority=SignalType.MORNING_CHECKLIST,
             timestamp=now,
         )
         self.discord.send_signal(signal)
         self.telegram.send_signal(signal)
 
+
+    # ------------------------------------------------------------------
+    # Day Classifier scheduled events
+    # ------------------------------------------------------------------
+    def _get_prior_day_stats(self):
+        """Get prior day range, EM, high, low from DB."""
+        try:
+            conn = get_conn()
+            # Get prior trading day date
+            today = datetime.now(PT_TZ).strftime("%Y-%m-%d")
+            row = conn.execute(
+                "SELECT DISTINCT date_pt FROM gex_snapshots "
+                "WHERE date_pt < ? AND session_tag='RTH' "
+                "ORDER BY date_pt DESC LIMIT 1",
+                (today,),
+            ).fetchone()
+            if not row:
+                conn.close()
+                return 0, 0, 0, 0
+            prior_date = row["date_pt"]
+            stats = conn.execute(
+                "SELECT MAX(curr_price) as hi, MIN(curr_price) as lo "
+                "FROM gex_snapshots WHERE date_pt=? AND session_tag='RTH'",
+                (prior_date,),
+            ).fetchone()
+            conn.close()
+            hi = float(stats["hi"]) if stats["hi"] else 0
+            lo = float(stats["lo"]) if stats["lo"] else 0
+            prior_range = hi - lo
+
+            # Prior day EM: use prior day's anchor (day before prior)
+            em_levels = self.interpreter.compute_expected_move()
+            prior_em = em_levels["em_pts"] if em_levels else 0
+
+            return prior_range, prior_em, lo, hi
+        except Exception as e:
+            log.error(f"_get_prior_day_stats error: {e}")
+            return 0, 0, 0, 0
+
+    def _fire_morning_read(self):
+        """6:30 AM PT — Morning Read (context, always fires)."""
+        snapshot = get_latest_snapshot()
+        if not snapshot:
+            return
+        self.classifier.reset_day()  # reset at start of day
+
+        eod = get_previous_trading_day_eod()
+        em_levels = self.interpreter.compute_expected_move()
+        prior_range, prior_em, _, _ = self._get_prior_day_stats()
+
+        msg = self.classifier.morning_read(snapshot, eod, em_levels, prior_range, prior_em)
+        self._send_classifier_alert("Morning Read", msg)
+
+    def _fire_morning_bet(self):
+        """7:00 AM PT — Morning Bet (conditional on first 30m ratio)."""
+        snapshot = get_latest_snapshot()
+        if not snapshot:
+            return
+
+        today_snaps = get_today_snapshots(session_tag="RTH")
+        if not today_snaps:
+            return
+
+        eod = get_previous_trading_day_eod()
+        em_levels = self.interpreter.compute_expected_move()
+        prior_range, prior_em, prior_low, prior_high = self._get_prior_day_stats()
+
+        msg = self.classifier.morning_bet(
+            snapshot, today_snaps, em_levels, eod,
+            prior_low, prior_high, prior_range, prior_em,
+        )
+        if msg:
+            self._send_classifier_alert("Morning Bet", msg)
+
+    def _fire_pin_check(self):
+        """11:00 AM PT — Pin Butterfly check."""
+        snapshot = get_latest_snapshot()
+        if not snapshot:
+            return
+
+        msg = self.classifier.pin_butterfly(snapshot)
+        if msg:
+            self._send_classifier_alert("Pin Butterfly", msg)
 
     def _fire_morning_brief(self):
         """Generate and send morning brief at 6:00 AM PT."""
@@ -992,6 +1483,7 @@ class GEXPipeline:
 
         signal = self.interpreter.generate_morning_brief(snapshot, overnight, advanced)
         self.discord.send_signal(signal)
+        self.telegram.send_signal(signal)
 
     def _fire_final_15(self):
         """Generate and send Final 15 alert at 12:45 PM PT."""
@@ -1045,6 +1537,8 @@ class GEXPipeline:
         self.discord.cooldown.reset_daily()
         self.telegram.cooldown.reset_daily()
         self.scheduler.reset_daily()
+        self.watchdog.reset_daily()
+        self.classifier.reset_day()
 
     def _fire_swing_signals(self, rth_snapshots):
         """Check for swing trade setups at EOD and send to Telegram.
@@ -1207,7 +1701,7 @@ class GEXPipeline:
             signal_type=SignalType.GAMMA_SNAP,
             title=f"Swing Signals ({count})",
             message=full_msg,
-            channel="gex_ops",
+            channel="gex_trades",
             priority=SignalType.GAMMA_SNAP,
             metadata={
                 "side": "SWING",
@@ -1243,10 +1737,11 @@ class GEXPipeline:
             signal_type=SignalType.PIN_FORECAST,
             title="Pin Forecast",
             message=msg,
-            channel="daily_intel",
+            channel="gex_context",
             priority=SignalType.PIN_FORECAST,
         )
         self.discord.send_signal(signal)
+        self.telegram.send_signal(signal)
 
     def _format_pin_forecast(self, snapshot: GEXSnapshot) -> str:
         cfg = CFG.get("pin_forecast", {})
@@ -1346,6 +1841,58 @@ class GEXPipeline:
 
         return "\n".join(lines)
 
+    def _fire_close_nowcast(self):
+        """Send 12:55 PM PT close nowcast — estimated closing price and bias."""
+        if not self._context_alerts_enabled():
+            return
+        snapshot = get_latest_snapshot()
+        if not snapshot or snapshot.session_tag != "RTH":
+            return
+
+        price = snapshot.curr_price
+        gamma_bn = snapshot.net_gamma / 1e9
+
+        # Move from open
+        move_from_open = 0.0
+        if self._rth_open_price is not None:
+            move_from_open = price - self._rth_open_price
+
+        # Close estimate model (from Codex calibration, 126 days, MAE 3.15pts)
+        delta = -0.34  # baseline mean
+        bias = "NEUTRAL"
+        confidence = "LOW"
+
+        if gamma_bn <= -10:
+            delta, bias, confidence = -4.42, "DOWN", "MEDIUM"
+        elif move_from_open <= -40:
+            delta, bias, confidence = +3.02, "BOUNCE UP", "MEDIUM"
+        elif gamma_bn >= 10:
+            delta, bias, confidence = -1.94, "SLIGHT DOWN", "LOW"
+        elif move_from_open >= 40:
+            delta, bias, confidence = +0.77, "DOWN RISK", "LOW"
+
+        expected_close = price + delta
+
+        msg = (
+            f"CLOSE NOWCAST | 12:55 PM PT\n"
+            f"SPX {price:.0f} | Expected close: ~{expected_close:.0f}\n"
+            f"Bias: {bias} | Confidence: {confidence}\n"
+            f"Typical band: {price + delta - 7:.0f} - {price + delta + 7:.0f} (+/-7 pts)\n"
+            f"Stress band: {price + delta - 16:.0f} - {price + delta + 16:.0f} (+/-16 pts)\n"
+            f"Gamma: {gamma_bn:+.1f} Bn | Move from open: {move_from_open:+.0f} pts"
+        )
+
+        signal = Signal(
+            signal_type=SignalType.PIN_FORECAST,
+            title="Close Nowcast",
+            message=msg,
+            channel="gex_context",
+            priority=SignalType.PIN_FORECAST,
+            timestamp=datetime.now(PT_TZ),
+        )
+        self.discord.send_signal(signal)
+        self.telegram.send_signal(signal)
+
 
 async def start_listener():
     """Start the Telethon listener and main pipeline."""
@@ -1368,6 +1915,15 @@ async def start_listener():
         return
 
     session_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gex_telegram")
+    # Clear stale SQLite journal/lock files to prevent "database is locked" after crashes
+    for suffix in ("-journal", "-wal", "-shm"):
+        lock_file = session_path + ".session" + suffix
+        if os.path.exists(lock_file):
+            try:
+                os.remove(lock_file)
+                log.info(f"Removed stale session lock: {lock_file}")
+            except OSError:
+                pass
     client = TelegramClient(session_path, api_id, api_hash)
 
     pipeline = GEXPipeline()
@@ -1378,29 +1934,235 @@ async def start_listener():
             await asyncio.sleep(interval)
             try:
                 pipeline.check_data_feed()
+                pipeline.watchdog.check_scheduled_events()
+                pipeline.watchdog.check_health_reports()
+                pipeline.watchdog.check_signal_flow()
             except Exception as e:
                 log.error(f"Data feed watchdog error: {e}", exc_info=True)
 
+    def _build_channel_alert(
+        channel_name: str,
+        direction: str | None,
+        entry: float | None,
+        stop: float | None,
+        targets: list | None,
+        pipe,
+        raw_detail: str,
+    ) -> str:
+        """Build a Type 2 channel relay alert with GEX validation checks."""
+        # Get current GEX state
+        latest = get_latest_snapshot()
+        if not latest:
+            return f"\U0001f4e1 RELAY \u2014 {channel_name}\n{raw_detail}"
+
+        gamma_bn = latest.net_gamma / 1e9
+        price = latest.curr_price
+        cw = latest.call_wall or 0
+        pf = latest.put_floor or 0
+
+        # Normalize direction
+        side = None
+        if direction in ("CALL", "LONG"):
+            side = "LONG"
+        elif direction in ("PUT", "SHORT"):
+            side = "SHORT"
+
+        # Build strike description from raw_detail
+        strike_line = raw_detail.split("\n")[0] if raw_detail else ""
+
+        # 5 GEX checks
+        checks = []
+
+        # 1. Direction alignment
+        if side == "LONG" and gamma_bn < -3:
+            checks.append(("\u2705", "Direction aligns (negative gamma, bullish setup)"))
+        elif side == "SHORT" and gamma_bn > 3:
+            checks.append(("\u2705", "Direction aligns (positive gamma, bearish setup)"))
+        elif side == "LONG" and gamma_bn > 5:
+            checks.append(("\u26a0\ufe0f", "Positive gamma — upside supported but may pin near resistance"))
+        elif side == "SHORT" and gamma_bn < -5:
+            checks.append(("\u274c", "Deep negative gamma — short squeeze risk"))
+        elif side:
+            checks.append(("\u26a0\ufe0f", f"Gamma {'positive' if gamma_bn > 0 else 'negative'} — neutral for this direction"))
+        else:
+            checks.append(("\u26a0\ufe0f", "Direction unclear from channel"))
+
+        # 2. Strike proximity to walls
+        if entry and entry > 0:
+            near_pf = pf and abs(entry - pf) < 20
+            near_cw = cw and abs(entry - cw) < 20
+            if near_pf or near_cw:
+                wall_name = "put floor support" if near_pf else "call wall resistance"
+                checks.append(("\u2705", f"Strike near {wall_name}"))
+            else:
+                checks.append(("\u26a0\ufe0f", "Strike not near any key GEX wall"))
+        else:
+            checks.append(("\u26a0\ufe0f", "No entry price to check wall proximity"))
+
+        # 3. EM position
+        em = pipe.interpreter.compute_expected_move() if hasattr(pipe, 'interpreter') else None
+        if em:
+            em_lower = em.get("lower", 0)
+            em_upper = em.get("upper", 0)
+            if side == "LONG" and price <= em_lower + 10:
+                checks.append(("\u2705", "Price near lower expected move — reversal zone"))
+            elif side == "SHORT" and price >= em_upper - 10:
+                checks.append(("\u2705", "Price near upper expected move — reversal zone"))
+            elif side == "LONG" and price > em_upper:
+                checks.append(("\u274c", "Price above upper EM — extended for longs"))
+            elif side == "SHORT" and price < em_lower:
+                checks.append(("\u274c", "Price below lower EM — extended for shorts"))
+            else:
+                checks.append(("\u26a0\ufe0f", "Price in mid-range of expected move"))
+        else:
+            checks.append(("\u26a0\ufe0f", "Expected move data unavailable"))
+
+        # 4. VWAP alignment
+        ma_vals = pipe._live_ma_cache if hasattr(pipe, '_live_ma_cache') and pipe._live_ma_cache else None
+        vwap = ma_vals.get("vwap") if ma_vals else None
+        if vwap and side:
+            if side == "LONG" and price < vwap:
+                checks.append(("\u2705", f"Below VWAP {vwap:.0f} — room to reclaim"))
+            elif side == "SHORT" and price > vwap:
+                checks.append(("\u2705", f"Above VWAP {vwap:.0f} — rejection zone"))
+            else:
+                checks.append(("\u26a0\ufe0f", f"VWAP at {vwap:.0f} — wrong side for this direction"))
+        else:
+            checks.append(("\u26a0\ufe0f", "VWAP data unavailable"))
+
+        # 5. Active conflicting signals
+        recent_sigs = getattr(pipe.interpreter, '_recent_signals', [])
+        now = datetime.now(PT_TZ)
+        cutoff = now - timedelta(minutes=10)
+        opposing = [s for s, n, t in recent_sigs if t >= cutoff and s != side]
+        if opposing:
+            checks.append(("\u274c", f"Conflicting {opposing[0]} signal fired recently — caution"))
+        else:
+            same_dir = [s for s, n, t in recent_sigs if t >= cutoff and s == side]
+            if same_dir:
+                checks.append(("\u2705", "Engine signals agree — same direction recently"))
+            else:
+                checks.append(("\u26a0\ufe0f", "No recent engine signals for confirmation"))
+
+        # Verdict logic
+        greens = sum(1 for icon, _ in checks if icon == "\u2705")
+        reds = sum(1 for icon, _ in checks if icon == "\u274c")
+        if reds >= 2:
+            verdict = "SKIP \u2014 too many conflicts"
+        elif reds == 1:
+            verdict = "VALID but manage tight"
+        elif greens >= 3:
+            verdict = "VALID \u2014 GEX confirms"
+        else:
+            verdict = "VALID \u2014 mixed signals, use caution"
+
+        # Format Type 2 output — box-drawing
+        lines = ["\u2501\u2501\u2501 CHANNEL RELAY \u2501\u2501\u2501"]
+        lines.append(f"\U0001f4e1 {channel_name}")
+        lines.append(strike_line)
+        lines.append("")
+        lines.append("GEX Check:")
+        for icon, text in checks:
+            lines.append(f"  {icon} {text}")
+        lines.append("")
+        lines.append(f"Verdict: {verdict}")
+        lines.append("\u2501" * 18)
+
+        return "\n".join(lines)
+
+    # Resolve the primary GEX channel for filtering
+    gex_primary_channel = channels_cfg.get("primary_gex_channel", "spotgammaraed")
+    _primary_chat_id = None  # resolved on first message
+
     @client.on(events.NewMessage(chats=channels))
     async def handler(event):
+        nonlocal _primary_chat_id
         if event.message.media:
             return
         text = event.message.text or ""
         envelope_dt = event.message.date  # UTC datetime from Telegram
-        if text:
+
+        # Resolve channel identity
+        chat = await event.get_chat()
+        chat_username = getattr(chat, "username", "") or ""
+
+        # Log non-primary channel messages for debugging
+        if chat_username != gex_primary_channel:
+            log.info(f"Channel msg [{chat_username}]: {text[:150].encode('ascii', 'replace').decode()}")
+
+        # Resolve primary channel ID on first match
+        if _primary_chat_id is None and chat_username.lower() == gex_primary_channel.lower():
+            _primary_chat_id = event.chat_id
+            log.info(f"Primary GEX channel resolved: {chat_username} = {_primary_chat_id}")
+
+        if text and chat_username != gex_primary_channel:
+            is_consensus_ch = chat_username in pipeline._consensus_channels
             spx_sig = parse_spx_million_message(text)
+
+            # Debug: log parse attempts for non-primary channels
             if spx_sig:
+                log.info(f"PARSED [{chat_username}]: {spx_sig.kind} dir={spx_sig.direction} entry={spx_sig.entry}")
+            else:
+                log.debug(f"NO PARSE [{chat_username}]: no Arabic keywords matched")
+
+            if spx_sig:
+                # Feed consensus tracker
+                if is_consensus_ch:
+                    pipeline.consensus.ingest(chat_username, spx_sig)
                 if pipeline._intraday_alerts_enabled():
-                    channel = CFG.get("spx_million", {}).get("alert_channel", "market_pulse")
+                    # Build validated alert with EM/GEX context
+                    msg = _build_channel_alert(
+                        chat_username, spx_sig.direction, spx_sig.entry,
+                        spx_sig.stop, spx_sig.targets, pipeline,
+                        format_spx_million_signal(spx_sig),
+                    )
+                    channel = CFG.get("spx_million", {}).get("alert_channel", "gex_relay")
                     signal = Signal(
                         signal_type=SignalType.SPX_MILLION,
-                        title="SPX Million",
-                        message=format_spx_million_signal(spx_sig),
+                        title=f"Channel Alert — {chat_username}",
+                        message=msg,
                         channel=channel,
                         priority=SignalType.SPX_MILLION,
                     )
                     pipeline.discord.send_signal(signal)
+                    pipeline.telegram.send_signal(signal)
                 return
+
+            # Keyword fallback for ALL non-primary channels (not just consensus)
+            call = pipeline.consensus.ingest_raw_text(chat_username, text) if is_consensus_ch else None
+            direction = None
+            if call:
+                direction = call.direction
+            else:
+                # Try keyword extraction even for non-consensus channels
+                from consensus_tracker import _extract_direction
+                direction = _extract_direction(text)
+
+            if direction and pipeline._intraday_alerts_enabled():
+                if is_consensus_ch and call:
+                    detail = f"[Keyword] {direction} detected in: {text[:200]}"
+                else:
+                    detail = f"[Relay] {direction} detected in: {text[:200]}"
+                msg = _build_channel_alert(
+                    chat_username, direction, call.entry_price if call else None,
+                    None, [], pipeline,
+                    detail,
+                )
+                signal = Signal(
+                    signal_type=SignalType.SPX_MILLION,
+                    title=f"Channel Alert — {chat_username}",
+                    message=msg,
+                    channel=CFG.get("spx_million", {}).get("alert_channel", "gex_relay"),
+                    priority=SignalType.SPX_MILLION,
+                )
+                pipeline.discord.send_signal(signal)
+                pipeline.telegram.send_signal(signal)
+
+        # Only process GEX snapshots from the primary channel
+        if _primary_chat_id is not None and event.chat_id != _primary_chat_id:
+            log.debug(f"Skipping GEX parse from non-primary channel {chat_username}")
+            return
+
         try:
             pipeline.process_message(text, envelope_dt)
         except Exception as e:

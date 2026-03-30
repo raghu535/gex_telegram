@@ -60,56 +60,74 @@ def build_hourly_recap_message(snapshots_1h: list[GEXSnapshot]) -> str:
             return "n/a"
         return ", ".join([f"{s} ({g:+.2f}Bn)" for s, g in targets])
 
+    # Plain English regime translations
+    _REGIME_PLAIN = {
+        "CONTROLLED_PIN": "pinning regime (price stuck near key strikes)",
+        "CONTROLLED_TREND": "controlled trend (dealers hedge in your favor)",
+        "FRAGILE_CONTROL": "fragile balance (could break either way)",
+        "UNCONTROLLED": "negative gamma chaos (dealers amplify moves)",
+    }
+
+    def _gamma_english(gbn: float) -> str:
+        if gbn < -10: return "extreme negative gamma"
+        elif gbn < -5: return "heavy negative gamma"
+        elif gbn < -2: return "negative gamma"
+        elif gbn > 8: return "strong positive gamma (ceiling)"
+        elif gbn > 3: return "positive gamma"
+        return "neutral gamma"
+
+    price_change = latest.curr_price - earliest.curr_price
+    gamma_change_bn = (latest.net_gamma - earliest.net_gamma) / 1e9
+    price_range = max(prices) - min(prices)
+    gamma_bn = latest.net_gamma / 1e9
+    time_range = f"{earliest.timestamp_pt.strftime('%I:%M %p').lstrip('0')} - {latest.timestamp_pt.strftime('%I:%M %p').lstrip('0')} PT"
+
+    # What happened summary
+    if abs(price_change) > 20:
+        what = f"SPX moved {'+' if price_change > 0 else ''}{price_change:.0f} pts ({'up' if price_change > 0 else 'down'})"
+    elif abs(price_change) > 5:
+        what = f"SPX drifted {'+' if price_change > 0 else ''}{price_change:.0f} pts"
+    else:
+        what = f"SPX chopped in a {price_range:.0f} pt range"
+
+    # Gamma context
+    if abs(gamma_change_bn) > 3:
+        gamma_what = f"Gamma shifted {'up' if gamma_change_bn > 0 else 'down'} {abs(gamma_change_bn):.1f} Bn"
+    elif abs(gamma_change_bn) > 1:
+        gamma_what = f"Gamma {'built' if gamma_change_bn > 0 else 'decayed'} {abs(gamma_change_bn):.1f} Bn"
+    else:
+        gamma_what = "Gamma stable"
+
+    regime_str = one_hour.regime.value if one_hour else "N/A"
+    regime_plain = _REGIME_PLAIN.get(regime_str, regime_str.lower().replace("_", " "))
+
     lines = [
-        f"**HOURLY RECAP** | {earliest.timestamp_pt.strftime('%I:%M %p')} - {latest.timestamp_pt.strftime('%I:%M %p')} PT",
-        f"Snapshots: {len(snapshots_1h)}",
-        f"Price: {earliest.curr_price:.2f} -> {latest.curr_price:.2f} | Range {min(prices):.2f}-{max(prices):.2f}",
-        f"Net Gamma: {earliest.net_gamma/1e9:+.2f} -> {latest.net_gamma/1e9:+.2f} Bn | Range {min(gammas)/1e9:+.2f} to {max(gammas)/1e9:+.2f} Bn",
-        "",
+        f"HOUR IN REVIEW | {time_range}",
+        f"{what} | {gamma_what}",
+        f"Now: SPX {latest.curr_price:.0f} | {_gamma_english(gamma_bn)}",
+        f"Environment: {regime_plain}",
+        f"Range: {latest.put_floor}-{latest.call_wall} ({latest.spread} pts)",
     ]
 
-    for label, w in [("5m", w5), ("15m", w15), ("30m", w30), ("60m", w60)]:
-        if w:
-            lines.append(
-                f"{label}: dPx {w['price_delta']:+.2f} | dG {w['gamma_delta_bn']:+.2f} Bn | snaps {w['count']}"
-            )
-
-    lines += [
-        "",
-        f"Call Wall: {latest.call_wall} | Put Floor: {latest.put_floor} | Spread: {latest.spread} pts",
-        f"Top Calls: {', '.join([f'{s}({g/1e9:+.2f}Bn)' for s, g in latest.top5_calls[:3]])}",
-        f"Top Puts:  {', '.join([f'{s}({g/1e9:+.2f}Bn)' for s, g in latest.top5_puts[:3]])}",
-        "",
-    ]
-
-    if fifteen_min:
-        lines.append(
-            f"15m: dPx {fifteen_min.price_delta:+.2f} | dG {fifteen_min.net_gamma_delta/1e9:+.2f} Bn | "
-            f"Ratio {fifteen_min.gamma_ratio:.2f} ({fifteen_min.gamma_ratio_trend})"
-        )
-    if one_hour:
-        lines.append(
-            f"1h: Regime {one_hour.regime.value} ({one_hour.regime_confidence:.0f}%) | "
-            f"Slope {one_hour.net_gamma_slope:+.2f} Bn/hr | Accel {one_hour.gamma_accel:+.2f}"
-        )
-
+    # Squeeze/pin outlook
     if advanced:
-        lines.append(
-            f"Advanced: GCI {advanced.gci:.0f}% ({advanced.gci_label}) | "
-            f"Asym {advanced.gamma_asymmetry:.2f} ({advanced.asymmetry_label})"
-        )
-        lines.append(
-            f"          Squeeze {advanced.squeeze_probability:.0f}% | Pin {advanced.pin_probability:.0f}%"
-        )
+        if advanced.squeeze_probability > 60:
+            lines.append(f"Alert: {advanced.squeeze_probability:.0f}% squeeze probability — breakout watch")
+        elif advanced.pin_probability > 60:
+            lines.append(f"Alert: {advanced.pin_probability:.0f}% pin probability — expect range contraction")
 
+    # Trend
     if trend:
-        label = "SMELL" if trend.smell else "TREND"
-        lines.append(f"Trend: {trend.bias} ({label}) | Score {trend.score}")
-        lines.append(f"Support targets: {fmt_targets(trend.support_targets)}")
-        lines.append(f"Resistance targets: {fmt_targets(trend.resistance_targets)}")
-        if trend.notes:
-            lines.append("Notes:")
-            for note in trend.notes[:6]:
-                lines.append(f"- {note}")
+        emoji = "\U0001f7e2" if trend.bias == "BULLISH" else "\U0001f534" if trend.bias == "BEARISH" else ""
+        conviction = "confirmed" if not trend.smell else "early signal"
+        lines.append(f"Trend: {emoji} {trend.bias} ({conviction}, score {trend.score})")
+
+    # Key support/resistance
+    if trend and trend.support_targets:
+        sup = ", ".join(str(s) for s, _ in trend.support_targets[:3])
+        lines.append(f"Support: {sup}")
+    if trend and trend.resistance_targets:
+        res = ", ".join(str(s) for s, _ in trend.resistance_targets[:3])
+        lines.append(f"Resistance: {res}")
 
     return "\n".join(lines)
